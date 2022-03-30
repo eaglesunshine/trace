@@ -94,6 +94,7 @@ func (t *TraceRoute) validateSrcAddress() error {
 
 	if t.af == "ip6"{
 		t.SrcAddr = "::"
+		t.netSrcAddr = net.ParseIP(t.SrcAddr)
 		return nil
 	}
 
@@ -120,12 +121,15 @@ func (t *TraceRoute) VerifyCfg() error {
 	}
 	t.netDstAddr = rAddr
 
-	//verify source address
+	logrus.Info("netDstAddr:", t.netDstAddr)
+
 	err = t.validateSrcAddress()
 	if err != nil {
 		logrus.Error(err)
 		return err
 	}
+
+	logrus.Info("netSrcAddr:", t.netSrcAddr)
 
 	var sig int32 = 0
 	t.stopSignal = &sig
@@ -138,11 +142,6 @@ func (t *TraceRoute) VerifyCfg() error {
 	if t.MaxTTL > 64 {
 		logrus.Warn("Large TTL may cause low performance")
 		return fmt.Errorf("Large TTL may cause low performance")
-	}
-
-	if t.PacketRate < 0 {
-		logrus.Error("Invalid pps")
-		return fmt.Errorf("Invalid pps")
 	}
 
 	return nil
@@ -167,12 +166,12 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	}
 
 	if err := result.VerifyCfg(); err != nil {
-		logrus.Error("VerifyCfg failed:", err)
+		logrus.Error("VerifyCfg failed: ", err)
 		return nil, err
 	}
 	result.Lock = &sync.RWMutex{}
 
-	logrus.Info("VerifyCfg passed:", result.netSrcAddr, " -> ", result.netDstAddr)
+	logrus.Info("VerifyCfg passed: ", result.netSrcAddr, " -> ", result.netDstAddr)
 
 	result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
 	for i := 0; i < len(result.Metric); i++ {

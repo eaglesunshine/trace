@@ -307,33 +307,33 @@ func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error
 
 	ipAddr := net.ParseIP(hostName)
 	if isIPv6 && ipAddr.To16() != nil {
-		logrus.Info("Using the provided ipv6 address %s for tracing\n", hostName)
+		logrus.Info("Using the provided ipv6 address ", ipAddr," for tracing")
 		dst.IP = ipAddr
 	} else if !isIPv6 && ipAddr.To4() != nil {
-		logrus.Info("Using the provided ipv4 address %s for tracing\n", hostName)
+		logrus.Info("Using the provided ipv4 address ", ipAddr, " for tracing")
 		dst.IP = ipAddr
 	} else {
 		ips, err := net.LookupIP(hostName)
 
 		if err != nil {
-			logrus.Error("Could not resolve %s\n", hostName)
+			logrus.Error("Could not resolve ", hostName)
 			return nil, err
 		}
 
 		for _, ip := range ips {
 			if isIPv6 && ip.To16() != nil {
 				dst.IP = ip
-				logrus.Info("%s resolved to %s, using this ipv6 address for tracing\n", hostName, ip)
+				logrus.Info(hostName, " resolved to ", ip, ", using this ipv6 address for tracing")
 				break
 			} else if !isIPv6 && ip.To4() != nil {
 				dst.IP = ip
-				logrus.Info("%s resolved to %s, using this ipv4 address for tracing\n", hostName, ip)
+				logrus.Info(hostName, " resolved to ", ip, ", using this ipv4 address for tracing")
 				break
 			}
 		}
 
 		if dst.IP == nil {
-			logrus.Error("Could not find a valid record for %s\n", hostName)
+			logrus.Error("Could not find a valid record for ", hostName)
 			return nil, fmt.Errorf("Could not find a valid record for %s\n", hostName)
 		}
 	}
