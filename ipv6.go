@@ -13,15 +13,14 @@ import (
 func (t *TraceRoute) TraceIpv6ICMP() {
 	var dst net.IPAddr
 
-	if _, err := t.dnsResolve(t.Dest, true, &dst); err != nil {
+	if _, err := t.dnsResolve(t.Dest, &dst); err != nil {
 		logrus.Error("TraceIpv6ICMP failed:", err)
 		return
 	}
 
 	//TODO：获取本地ipv6地址
-	localAddr := "::"
 
-	icmp6Sock, err := net.ListenPacket("ip6:ipv6-icmp", localAddr)
+	icmp6Sock, err := net.ListenPacket("ip6:ipv6-icmp", t.SrcAddr)
 	if err != nil {
 		logrus.Error("Could not set a listening ICMP6 socket: %s\n", err)
 		return

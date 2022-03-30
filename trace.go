@@ -81,6 +81,7 @@ func NewStatsDB(key string) *StatsDB {
 	return px
 }
 
+
 func (t *TraceRoute) validateSrcAddress() error {
 	if t.SrcAddr != "" {
 		addr, err := net.ResolveIPAddr(t.af, t.SrcAddr)
@@ -88,6 +89,11 @@ func (t *TraceRoute) validateSrcAddress() error {
 			return err
 		}
 		t.netSrcAddr = addr.IP
+		return nil
+	}
+
+	if t.af == "ip6"{
+		t.SrcAddr = "::"
 		return nil
 	}
 
@@ -106,18 +112,13 @@ func (t *TraceRoute) validateSrcAddress() error {
 }
 
 func (t *TraceRoute) VerifyCfg() error {
-	rAddr, err := net.LookupIP(t.Dest)
+	var dst net.IPAddr
+	rAddr, err := t.dnsResolve(t.Dest, &dst)
 	if err != nil {
 		logrus.Error("dst address validation:", err)
 		return err
 	}
-	t.netDstAddr = rAddr[0]
-
-	////update address family
-	//t.af = "ip4"
-	//if strings.Contains(t.netDstAddr.String(), ":") {
-	//	t.af = "ip6"
-	//}
+	t.netDstAddr = rAddr
 
 	//verify source address
 	err = t.validateSrcAddress()
@@ -166,9 +167,12 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	}
 
 	if err := result.VerifyCfg(); err != nil {
+		logrus.Error("VerifyCfg failed:", err)
 		return nil, err
 	}
 	result.Lock = &sync.RWMutex{}
+
+	logrus.Info("VerifyCfg passed:", result.netSrcAddr, " -> ", result.netDstAddr)
 
 	result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
 	for i := 0; i < len(result.Metric); i++ {

@@ -299,7 +299,12 @@ func (t *TraceRoute) BuildIPv4ICMP(ttl uint8, id, seq uint16, tos int) (*ipv4.He
 	return iph, buf.Bytes()
 }
 
-func (t *TraceRoute) dnsResolve(hostName string, isIPv6 bool, dst *net.IPAddr) (net.IP, error) {
+func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error) {
+	isIPv6 := false
+	if t.af == "ip6"{
+		isIPv6 = true
+	}
+
 	ipAddr := net.ParseIP(hostName)
 	if isIPv6 && ipAddr.To16() != nil {
 		logrus.Info("Using the provided ipv6 address %s for tracing\n", hostName)
