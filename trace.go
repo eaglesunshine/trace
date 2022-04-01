@@ -92,14 +92,13 @@ func (t *TraceRoute) validateSrcAddress() error {
 		return nil
 	}
 
+	netVersion := "udp4"
 	if t.af == "ip6"{
-		t.SrcAddr = "::"
-		t.netSrcAddr = net.ParseIP(t.SrcAddr)
-		return nil
+		netVersion = "udp6"
 	}
 
 	//if config does not specify address, fetch local address
-	conn, err := net.Dial("udp", "8.8.8.8:53")
+	conn, err := net.Dial(netVersion, "8.8.8.8:53")
 	if err != nil {
 		logrus.Error(err)
 		return nil
