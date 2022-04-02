@@ -92,13 +92,13 @@ func (t *TraceRoute) validateSrcAddress() error {
 		return nil
 	}
 
-	netVersion := "udp4"
 	if t.af == "ip6"{
-		netVersion = "udp6"
+		t.SrcAddr="::"
+		return nil
 	}
 
 	//if config does not specify address, fetch local address
-	conn, err := net.Dial(netVersion, "8.8.8.8:53")
+	conn, err := net.Dial("udp", "8.8.8.8:53")
 	if err != nil {
 		logrus.Error(err)
 		return nil
@@ -120,7 +120,7 @@ func (t *TraceRoute) VerifyCfg() error {
 	}
 	t.netDstAddr = rAddr
 
-	logrus.Info("netDstAddr:", t.netDstAddr)
+	//logrus.Info("netDstAddr:", t.netDstAddr)
 
 	err = t.validateSrcAddress()
 	if err != nil {
@@ -128,7 +128,7 @@ func (t *TraceRoute) VerifyCfg() error {
 		return err
 	}
 
-	logrus.Info("netSrcAddr:", t.netSrcAddr)
+	//logrus.Info("netSrcAddr:", t.netSrcAddr)
 
 	var sig int32 = 0
 	t.stopSignal = &sig
@@ -215,7 +215,7 @@ func (t *TraceRoute) TraceICMP() {
 func (t *TraceRoute) Run() {
 	if t.af == "ip6" {
 		t.TraceIpv6ICMP()
-		logrus.Info("ip6 trace stop!!")
+		//logrus.Info("ip6 trace stop!!")
 		return
 	}
 
@@ -240,7 +240,7 @@ func (t *TraceRoute) Stop() {
 		return
 	}
 
-	logrus.Warn("ip4 trace stop!!")
+	//logrus.Warn("ip4 trace stop!!")
 
 	//设置stop信号
 	atomic.StoreInt32(t.stopSignal, 1)

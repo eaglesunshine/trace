@@ -105,7 +105,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() {
 		//n是ICMP响应包字节数，raddr是发出ICMP响应的IP地址
 		n, raddr, err := t.recvICMPConn.ReadFrom(buf)
 		if err != nil {
-			logrus.Error("recvICMPConn.ReadFrom failed:", err)
+			//logrus.Error("recvICMPConn.ReadFrom failed:", err)
 			break
 		}
 

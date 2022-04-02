@@ -131,7 +131,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() {
 
 		n, raddr, err := t.recvICMPConn.ReadFrom(buf)
 		if err != nil {
-			logrus.Error("recvICMPConn.ReadFrom failed:", err)
+			//logrus.Error("recvICMPConn.ReadFrom failed:", err)
 			break
 		}
 
