@@ -307,10 +307,10 @@ func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error
 
 	ipAddr := net.ParseIP(hostName)
 	if isIPv6 && ipAddr.To16() != nil {
-		logrus.Info("Using the provided ipv6 address ", ipAddr," for tracing")
+		//logrus.Info("Using the provided ipv6 address ", ipAddr," for tracing")
 		dst.IP = ipAddr
 	} else if !isIPv6 && ipAddr.To4() != nil {
-		logrus.Info("Using the provided ipv4 address ", ipAddr, " for tracing")
+		//logrus.Info("Using the provided ipv4 address ", ipAddr, " for tracing")
 		dst.IP = ipAddr
 	} else {
 		ips, err := net.LookupIP(hostName)
@@ -323,11 +323,11 @@ func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error
 		for _, ip := range ips {
 			if isIPv6 && ip.To16() != nil {
 				dst.IP = ip
-				logrus.Info(hostName, " resolved to ", ip, ", using this ipv6 address for tracing")
+				//logrus.Info(hostName, " resolved to ", ip, ", using this ipv6 address for tracing")
 				break
 			} else if !isIPv6 && ip.To4() != nil {
 				dst.IP = ip
-				logrus.Info(hostName, " resolved to ", ip, ", using this ipv4 address for tracing")
+				//logrus.Info(hostName, " resolved to ", ip, ", using this ipv4 address for tracing")
 				break
 			}
 		}
