@@ -94,7 +94,7 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 				timeCost := time.Since(timeNow)
 
 				if answer.Type == ipv6.ICMPTypeTimeExceeded {
-					fmt.Printf("%d   %40s   %40s\n", i, node.String(), timeCost)
+					//fmt.Printf("%d   %40s   %40s\n", i, node.String(), timeCost)
 
 					hop = map[string]interface{}{
 						"rtt":   fmt.Sprintf("%s", timeCost),
@@ -103,7 +103,7 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 
 					hopData.Details = append(hopData.Details, hop)
 				} else if answer.Type == ipv6.ICMPTypeEchoReply {
-					fmt.Printf("%d   %40s   %40s\n", i, node.String(), timeCost)
+					//fmt.Printf("%d   %40s   %40s\n", i, node.String(), timeCost)
 					hop = map[string]interface{}{
 						"rtt":   fmt.Sprintf("%s", timeCost),
 						"saddr": node.String(),
@@ -113,7 +113,7 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 					isDest = true
 					break
 				} else {
-					fmt.Printf("%d %40s\n", i, "*")
+					//fmt.Printf("%d %40s\n", i, "*")
 				}
 
 			}

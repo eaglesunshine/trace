@@ -62,7 +62,7 @@ func (t *TraceRoute) SendIPv4TCP(dport uint16) {
 		//计算序列号：+4
 		seq = (seq + 4) % mod
 
-		logrus.Info("send tcp ttl:", ttl)
+		//logrus.Info("send tcp ttl:", ttl)
 
 		//atomic.AddUint64(db.SendCnt, 1)
 	}
@@ -136,7 +136,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() {
 		}
 
 		icmpType := buf[0]
-		logrus.Info(raddr, "|", icmpType, "|", n)
+		//logrus.Info(raddr, "|", icmpType, "|", n)
 
 		if (icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) { //TTL Exceeded or Port Unreachable
 			seq := binary.BigEndian.Uint32(buf[32:36])
@@ -154,7 +154,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() {
 					RespAddr:  raddr.String(),
 					TimeStamp: time.Now(),
 				}
-				logrus.Info("recv tcp ttl:", seq/4)
+				//logrus.Info("recv tcp ttl:", seq/4)
 
 				t.RecvChan <- m
 			}

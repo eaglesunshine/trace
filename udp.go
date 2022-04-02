@@ -68,7 +68,7 @@ func (t *TraceRoute) SendIPv4UDP() {
 		//发送完一个TCP探测包，存储发送记录到缓存
 		t.SendChan <- report
 
-		logrus.Info("send udp ttl:", ttl)
+		//logrus.Info("send udp ttl:", ttl)
 
 		//atomic.AddUint64(db.SendCnt, 1)
 	}
@@ -132,7 +132,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() {
 					RespAddr:  raddr.String(),
 					TimeStamp: time.Now(),
 				}
-				logrus.Info("recv udp ttl:", id)
+				//logrus.Info("recv udp ttl:", id)
 
 				//存储响应结果
 				t.RecvChan <- m

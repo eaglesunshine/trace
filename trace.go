@@ -170,7 +170,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	}
 	result.Lock = &sync.RWMutex{}
 
-	logrus.Info("VerifyCfg passed: ", result.netSrcAddr, " -> ", result.netDstAddr)
+	//logrus.Info("VerifyCfg passed: ", result.netSrcAddr, " -> ", result.netDstAddr)
 
 	result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
 	for i := 0; i < len(result.Metric); i++ {
@@ -240,11 +240,15 @@ func (t *TraceRoute) Stop() {
 		return
 	}
 
-	logrus.Warn("stop!!")
+	logrus.Warn("ip4 trace stop!!")
 
 	//设置stop信号
 	atomic.StoreInt32(t.stopSignal, 1)
+
 	//关闭ICMP响应报文接收通道
-	t.recvICMPConn.Close()
+	if t.recvICMPConn != nil{
+		t.recvICMPConn.Close()
+	}
+
 	//t.recvTCPConn.Close()
 }

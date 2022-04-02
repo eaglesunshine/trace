@@ -9,8 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/eaglesunshine/trace/stats/describe"
 	"github.com/eaglesunshine/trace/stats/quantile"
 )
@@ -141,7 +139,7 @@ func (t *TraceRoute) GetHopData(id int) (hopData HopData, isDest bool) {
 	for _, recoreds := range t.Metric[id] {
 		for _, v := range recoreds {
 
-			logrus.Info("get record ttl:", id)
+			//logrus.Info("get record ttl:", id)
 
 			RespAddr := v.Addr //第i跳发回ICMP响应包的IP地址
 
