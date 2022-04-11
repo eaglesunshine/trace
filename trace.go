@@ -103,8 +103,9 @@ func (t *TraceRoute) validateSrcAddress() error {
 		logrus.Error(err)
 		return nil
 	}
+	defer conn.Close()
+
 	result := conn.LocalAddr().(*net.UDPAddr)
-	conn.Close()
 	t.netSrcAddr = result.IP
 
 	//TODO：计算当前IP的经纬度(问题：如何获取到外网IP)
