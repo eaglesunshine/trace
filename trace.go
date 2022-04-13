@@ -195,10 +195,10 @@ func (t *TraceRoute) TraceUDP()(err error) {
 		wg.Add(1)
 		go func(handler func() error){
 			defer func() {
+				wg.Done()
 				if e := recover(); e != nil {
 					logrus.Error(e)
 				}
-				wg.Done()
 			}()
 
 			e := handler()
@@ -212,10 +212,10 @@ func (t *TraceRoute) TraceUDP()(err error) {
 	wg.Add(1)
 	go func(handler func() error){
 		defer func() {
+			wg.Done()
 			if e := recover(); e != nil {
 				logrus.Error(e)
 			}
-			wg.Done()
 		}()
 
 		e := handler()
@@ -235,10 +235,10 @@ func (t *TraceRoute) TraceTCP()(err error) {
 		wg.Add(1)
 		go func(handler func() error){
 			defer func() {
+				wg.Done()
 				if e := recover(); e != nil {
 					logrus.Error(e)
 				}
-				wg.Done()
 			}()
 
 			e := handler()
@@ -251,10 +251,10 @@ func (t *TraceRoute) TraceTCP()(err error) {
 	wg.Add(1)
 	go func(handler func() error){
 		defer func() {
+			wg.Done()
 			if e := recover(); e != nil {
 				logrus.Error(e)
 			}
-			wg.Done()
 		}()
 
 		e := handler()
@@ -275,10 +275,10 @@ func (t *TraceRoute) TraceICMP()(err error) {
 		wg.Add(1)
 		go func(handler func() error){
 			defer func() {
+				wg.Done()
 				if e := recover(); e != nil {
 					logrus.Error(e)
 				}
-				wg.Done()
 			}()
 
 			e := handler()
@@ -291,10 +291,10 @@ func (t *TraceRoute) TraceICMP()(err error) {
 	wg.Add(1)
 	go func(handler func() error){
 		defer func() {
+			wg.Done()
 			if e := recover(); e != nil {
 				logrus.Error(e)
 			}
-			wg.Done()
 		}()
 
 		e := handler()
