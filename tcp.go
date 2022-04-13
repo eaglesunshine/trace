@@ -127,7 +127,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() error {
 
 	for {
 		if atomic.LoadInt32(t.stopSignal) == 1 {
-			return nil
+			break
 		}
 
 		buf := make([]byte, 1500)

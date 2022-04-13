@@ -2,12 +2,13 @@ package ztrace
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/net/icmp"
-	"golang.org/x/net/ipv6"
 	"math/rand"
 	"net"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv6"
 )
 
 func (t *TraceRoute) TraceIpv6ICMP() error {
@@ -22,7 +23,7 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 
 	icmp6Sock, err := net.ListenPacket("ip6:ipv6-icmp", t.SrcAddr)
 	if err != nil {
-		logrus.Error("Could not set a listening ICMP6 socket: %s\n", err)
+		logrus.Error("Could not set a listening ICMP6 socket: ", err)
 		return err
 	}
 	defer icmp6Sock.Close()
@@ -31,7 +32,7 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 	defer ipv6Sock.Close()
 
 	if err := ipv6Sock.SetControlMessage(ipv6.FlagHopLimit|ipv6.FlagDst|ipv6.FlagInterface|ipv6.FlagSrc, true); err != nil {
-		logrus.Error("Could not set options on the ipv6 socket: %s\n", err)
+		logrus.Error("Could not set options on the ipv6 socket: ", err)
 		return err
 	}
 
@@ -55,24 +56,24 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 			buffer, err := icmp6Echo.Marshal(nil)
 
 			if err != nil {
-				logrus.Error("Could not serialize the ICMP6 echo request: %s\n", err)
+				logrus.Error("Could not serialize the ICMP6 echo request: ", err)
 				return err
 			}
 
 			if err := ipv6Sock.SetHopLimit(i); err != nil {
-				logrus.Error("Could not set the HopLimit field: %s\n", err)
+				logrus.Error("Could not set the HopLimit field: ", err)
 				return err
 			}
 
 			timeNow := time.Now()
 
 			if _, err := ipv6Sock.WriteTo(buffer, nil, &dst); err != nil {
-				logrus.Error("Could not send the ICMP6 echo packet: %s\n", err)
+				logrus.Error("Could not send the ICMP6 echo packet: ", err)
 				return err
 			}
 
 			if err := ipv6Sock.SetReadDeadline(time.Now().Add(t.Timeout)); err != nil {
-				logrus.Error("Could not set the read timeout on the ipv6 socket: %s\n", err)
+				logrus.Error("Could not set the read timeout on the ipv6 socket: ", err)
 				return err
 			}
 
@@ -87,7 +88,7 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 				answer, err := icmp.ParseMessage(58, buf[:n])
 
 				if err != nil {
-					logrus.Error("Could not parse the ICMP6 packet from: %s\n", node.String())
+					logrus.Error("Could not parse the ICMP6 packet from: ", node.String())
 					return err
 				}
 

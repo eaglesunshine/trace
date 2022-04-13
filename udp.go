@@ -98,7 +98,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() error {
 	for {
 		//监听stop信号
 		if atomic.LoadInt32(t.stopSignal) == 1 {
-			return nil
+			break
 		}
 
 		//接收ICMP报文最大1500字节

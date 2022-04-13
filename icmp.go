@@ -45,7 +45,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 		t.SendChan <- report
 		id = (id + 1) % mod
 
-		//logrus.Info("send icmp ttl:", ttl)
+		logrus.Info("send icmp ttl:", ttl)
 
 		//atomic.AddUint64(db.SendCnt, 1)
 	}
@@ -72,7 +72,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 
 	for {
 		if atomic.LoadInt32(t.stopSignal) == 1 {
-			return nil
+			break
 		}
 
 		buf := make([]byte, 1500)
@@ -101,7 +101,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					RespAddr:  raddr.String(),
 					TimeStamp: time.Now(),
 				}
-				//logrus.Info("recv icmp ttl:", id)
+				logrus.Info("recv icmp ttl:", id)
 
 				t.RecvChan <- m
 			}

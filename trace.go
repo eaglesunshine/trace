@@ -194,11 +194,11 @@ func (t *TraceRoute) TraceUDP()(err error) {
 	for i := 0; i < t.MaxPath; i++ {
 		wg.Add(1)
 		go func(handler func() error){
-			defer wg.Done()
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
 				}
+				wg.Done()
 			}()
 
 			e := handler()
@@ -211,11 +211,11 @@ func (t *TraceRoute) TraceUDP()(err error) {
 	//接收UDP数据包TTL减为0或者不可达产生的ICMP响应包
 	wg.Add(1)
 	go func(handler func() error){
-		defer wg.Done()
 		defer func() {
 			if e := recover(); e != nil {
 				logrus.Error(e)
 			}
+			wg.Done()
 		}()
 
 		e := handler()
@@ -234,11 +234,11 @@ func (t *TraceRoute) TraceTCP()(err error) {
 	for i := 0; i < t.MaxPath; i++ {
 		wg.Add(1)
 		go func(handler func() error){
-			defer wg.Done()
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
 				}
+				wg.Done()
 			}()
 
 			e := handler()
@@ -250,11 +250,11 @@ func (t *TraceRoute) TraceTCP()(err error) {
 
 	wg.Add(1)
 	go func(handler func() error){
-		defer wg.Done()
 		defer func() {
 			if e := recover(); e != nil {
 				logrus.Error(e)
 			}
+			wg.Done()
 		}()
 
 		e := handler()
@@ -274,11 +274,11 @@ func (t *TraceRoute) TraceICMP()(err error) {
 	for i := 0; i < t.MaxPath; i++ {
 		wg.Add(1)
 		go func(handler func() error){
-			defer wg.Done()
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
 				}
+				wg.Done()
 			}()
 
 			e := handler()
@@ -290,11 +290,11 @@ func (t *TraceRoute) TraceICMP()(err error) {
 
 	wg.Add(1)
 	go func(handler func() error){
-		defer wg.Done()
 		defer func() {
 			if e := recover(); e != nil {
 				logrus.Error(e)
 			}
+			wg.Done()
 		}()
 
 		e := handler()
@@ -315,11 +315,11 @@ func (t *TraceRoute) Run() error {
 
 	switch t.Protocol {
 	case "tcp":
-		return t.TraceTCP()
+		return GoroutineNotPanic(t.Stats, t.TraceTCP)
 	case "udp":
-		return t.TraceUDP()
+		return GoroutineNotPanic(t.Stats, t.TraceUDP)
 	case "icmp":
-		return t.TraceICMP()
+		return GoroutineNotPanic(t.Stats, t.TraceICMP)
 
 	default:
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")

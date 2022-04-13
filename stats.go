@@ -60,7 +60,7 @@ func (t *TraceRoute) NewServerRecord(ipaddr string, ttl uint8, key string) *Serv
 	return r
 }
 
-func (t *TraceRoute) Stats() {
+func (t *TraceRoute) Stats() error {
 	for {
 		//轮询就绪缓存队列
 		select {
@@ -118,7 +118,7 @@ func (t *TraceRoute) Stats() {
 		default:
 			//监听stop信号
 			if atomic.LoadInt32(t.stopSignal) == 1 {
-				return
+				break
 			}
 		}
 
