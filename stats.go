@@ -112,18 +112,20 @@ func (t *TraceRoute) Stats() error {
 				t.LastArrived += 1
 				if t.LastArrived == t.MaxPath {
 					t.Stop()
+					return nil
 				}
 			}
 
 		default:
 			//监听stop信号
 			if atomic.LoadInt32(t.stopSignal) == 1 {
-				break
+				return nil
 			}
 		}
 
 	}
 
+	return nil
 }
 
 type HopData struct {
