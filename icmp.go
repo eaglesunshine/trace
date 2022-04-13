@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-func (t *TraceRoute) SendIPv4ICMP() {
+func (t *TraceRoute) SendIPv4ICMP() error {
 	key := GetHash(t.netSrcAddr.To4(), t.netDstAddr.To4(), 65535, 65535, 1)
 	db := NewStatsDB(key)
 
@@ -19,14 +19,14 @@ func (t *TraceRoute) SendIPv4ICMP() {
 	conn, err := net.ListenPacket("ip4:icmp", t.netSrcAddr.String())
 	if err != nil {
 		logrus.Error(err)
-		return
+		return err
 	}
 	defer conn.Close()
 
 	rSocket, err := ipv4.NewRawConn(conn)
 	if err != nil {
 		logrus.Error("can not create raw socket:", err)
-		return
+		return err
 	}
 	defer rSocket.Close()
 
@@ -49,9 +49,11 @@ func (t *TraceRoute) SendIPv4ICMP() {
 
 		//atomic.AddUint64(db.SendCnt, 1)
 	}
+
+	return nil
 }
 
-func (t *TraceRoute) ListenIPv4ICMP() {
+func (t *TraceRoute) ListenIPv4ICMP() error {
 	defer t.Stop()
 
 	laddr := &net.IPAddr{IP: t.netSrcAddr}
@@ -61,7 +63,7 @@ func (t *TraceRoute) ListenIPv4ICMP() {
 
 	if err != nil {
 		logrus.Error("bind failure:", err)
-		return
+		return err
 	}
 	defer t.recvICMPConn.Close()
 
@@ -70,14 +72,14 @@ func (t *TraceRoute) ListenIPv4ICMP() {
 
 	for {
 		if atomic.LoadInt32(t.stopSignal) == 1 {
-			return
+			return nil
 		}
 
 		buf := make([]byte, 1500)
 		n, raddr, err := t.recvICMPConn.ReadFrom(buf)
 		if err != nil {
 			//logrus.Error("recvICMPConn.ReadFrom failed:", err)
-			return
+			return nil
 		}
 
 		icmpType := buf[0]

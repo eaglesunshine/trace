@@ -13,7 +13,8 @@ import (
 )
 
 // SendIPv4TCP 发送TCP探测包
-func (t *TraceRoute) SendIPv4TCP(dport uint16) {
+func (t *TraceRoute) SendIPv4TCP() {
+	dport := t.TCPDPort
 	sport := uint16(1000 + t.PortOffset + rand.Int31n(500))
 
 	//key：源地址+目的地址+源端口+目的端口+proto，用于标识探测任务

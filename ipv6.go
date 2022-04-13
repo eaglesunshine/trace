@@ -10,12 +10,12 @@ import (
 	"time"
 )
 
-func (t *TraceRoute) TraceIpv6ICMP() {
+func (t *TraceRoute) TraceIpv6ICMP() error {
 	var dst net.IPAddr
 
 	if _, err := t.dnsResolve(t.Dest, &dst); err != nil {
 		logrus.Error("TraceIpv6ICMP failed:", err)
-		return
+		return err
 	}
 
 	//TODO：获取本地ipv6地址
@@ -23,7 +23,7 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 	icmp6Sock, err := net.ListenPacket("ip6:ipv6-icmp", t.SrcAddr)
 	if err != nil {
 		logrus.Error("Could not set a listening ICMP6 socket: %s\n", err)
-		return
+		return err
 	}
 	defer icmp6Sock.Close()
 
@@ -32,7 +32,7 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 
 	if err := ipv6Sock.SetControlMessage(ipv6.FlagHopLimit|ipv6.FlagDst|ipv6.FlagInterface|ipv6.FlagSrc, true); err != nil {
 		logrus.Error("Could not set options on the ipv6 socket: %s\n", err)
-		return
+		return err
 	}
 
 	icmp6Echo := icmp.Message{
@@ -56,24 +56,24 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 
 			if err != nil {
 				logrus.Error("Could not serialize the ICMP6 echo request: %s\n", err)
-				return
+				return err
 			}
 
 			if err := ipv6Sock.SetHopLimit(i); err != nil {
 				logrus.Error("Could not set the HopLimit field: %s\n", err)
-				return
+				return err
 			}
 
 			timeNow := time.Now()
 
 			if _, err := ipv6Sock.WriteTo(buffer, nil, &dst); err != nil {
 				logrus.Error("Could not send the ICMP6 echo packet: %s\n", err)
-				return
+				return err
 			}
 
 			if err := ipv6Sock.SetReadDeadline(time.Now().Add(t.Timeout)); err != nil {
 				logrus.Error("Could not set the read timeout on the ipv6 socket: %s\n", err)
-				return
+				return err
 			}
 
 			n, _, node, err := ipv6Sock.ReadFrom(buf)
@@ -82,13 +82,13 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 			hop := map[string]interface{}{}
 
 			if err != nil {
-				fmt.Printf("%d %40s\n", i, "*")
+				//fmt.Printf("%d %40s\n", i, "*")
 			} else {
 				answer, err := icmp.ParseMessage(58, buf[:n])
 
 				if err != nil {
 					logrus.Error("Could not parse the ICMP6 packet from: %s\n", node.String())
-					return
+					return err
 				}
 
 				timeCost := time.Since(timeNow)
@@ -123,7 +123,9 @@ func (t *TraceRoute) TraceIpv6ICMP() {
 		t.hops = append(t.hops, hopData)
 
 		if isDest {
-			return
+			break
 		}
 	}
+
+	return nil
 }

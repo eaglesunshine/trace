@@ -62,7 +62,6 @@ func (t *TraceRoute) NewServerRecord(ipaddr string, ttl uint8, key string) *Serv
 
 func (t *TraceRoute) Stats() {
 	for {
-
 		//轮询就绪缓存队列
 		select {
 		case v := <-t.SendChan:
@@ -124,6 +123,7 @@ func (t *TraceRoute) Stats() {
 		}
 
 	}
+
 }
 
 type HopData struct {

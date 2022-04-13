@@ -188,7 +188,7 @@ func (t *TraceRoute) ProbeTCP() {
 	}
 }
 
-func (t *TraceRoute) TraceUDP() {
+func (t *TraceRoute) TraceUDP()(err error) {
 	//同时发起MaxPath个探测包
 	for i := 0; i < t.MaxPath; i++ {
 		go t.SendIPv4UDP()
@@ -196,45 +196,79 @@ func (t *TraceRoute) TraceUDP() {
 
 	//接收UDP数据包TTL减为0或者不可达产生的ICMP响应包
 	go t.ListenIPv4UDP_ICMP()
+
+	return nil
 }
 
-func (t *TraceRoute) TraceTCP() {
+func (t *TraceRoute) TraceTCP()(err error) {
 	for i := 0; i < t.MaxPath; i++ {
-		go t.SendIPv4TCP(t.TCPDPort)
+		go t.SendIPv4TCP()
 	}
 	//go t.ListenIPv4TCP()
 	go t.ListenIPv4TCP_ICMP()
+
+	return nil
 }
 
-func (t *TraceRoute) TraceICMP() {
+func (t *TraceRoute) TraceICMP()(err error) {
+	var wg sync.WaitGroup
+
 	for i := 0; i < t.MaxPath; i++ {
-		go t.SendIPv4ICMP()
+		wg.Add(1)
+		go func(handler func() error){
+			defer func() {
+				if e := recover(); e != nil {
+					logrus.Error(e)
+				}
+				wg.Done()
+			}()
+
+			e := handler()
+			if err == nil && e != nil {
+				err = e
+			}
+		}(t.SendIPv4ICMP)
 	}
-	go t.ListenIPv4ICMP()
+
+	wg.Add(1)
+	go func(handler func() error){
+		defer func() {
+			if e := recover(); e != nil {
+				logrus.Error(e)
+			}
+			wg.Done()
+		}()
+
+		e := handler()
+		if err == nil && e != nil {
+			err = e
+		}
+	}(t.ListenIPv4ICMP)
+
+	wg.Wait()
+
+	return
 }
 
-func (t *TraceRoute) Run() {
+func (t *TraceRoute) Run() error {
 	if t.af == "ip6" {
-		t.TraceIpv6ICMP()
-		//logrus.Info("ip6 trace stop!!")
-		return
+		return t.TraceIpv6ICMP()
 	}
-
-	go t.Stats()
 
 	switch t.Protocol {
 	case "tcp":
-		go t.TraceTCP()
+		return t.TraceTCP()
 	case "udp":
-		go t.TraceUDP()
+		return t.TraceUDP()
 	case "icmp":
-		go t.TraceICMP()
+		return t.TraceICMP()
 
 	default:
-		logrus.Fatal("unsupported protocol: only support tcp/udp/icmp")
+		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")
 	}
 
 }
+
 
 func (t *TraceRoute) Stop() {
 	if atomic.LoadInt32(t.stopSignal) == 1 {
@@ -252,4 +286,29 @@ func (t *TraceRoute) Stop() {
 	}
 
 	//t.recvTCPConn.Close()
+}
+
+func GoroutineNotPanic(handlers ...func() error) (err error) {
+	var wg sync.WaitGroup
+	for _, f := range handlers {
+		wg.Add(1)
+		go func(handler func() error) {
+			defer func() {
+				if e := recover(); e != nil {
+					logrus.Error(e)
+				}
+				wg.Done()
+			}()
+
+			// 取第一个报错的handler调用逻辑，并最终向外返回
+			e := handler()
+			if err == nil && e != nil {
+				err = e
+			}
+		}(f)
+	}
+
+	wg.Wait()
+
+	return
 }
