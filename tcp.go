@@ -13,7 +13,7 @@ import (
 )
 
 // SendIPv4TCP 发送TCP探测包
-func (t *TraceRoute) SendIPv4TCP() {
+func (t *TraceRoute) SendIPv4TCP() error {
 	dport := t.TCPDPort
 	sport := uint16(1000 + t.PortOffset + rand.Int31n(500))
 
@@ -26,14 +26,14 @@ func (t *TraceRoute) SendIPv4TCP() {
 	conn, err := net.ListenPacket("ip4:tcp", t.netSrcAddr.String())
 	if err != nil {
 		logrus.Error(err)
-		return
+		return err
 	}
 	defer conn.Close()
 
 	rSocket, err := ipv4.NewRawConn(conn)
 	if err != nil {
 		logrus.Error("can not create raw socket:", err)
-		return
+		return err
 	}
 	defer rSocket.Close()
 
@@ -67,6 +67,8 @@ func (t *TraceRoute) SendIPv4TCP() {
 
 		//atomic.AddUint64(db.SendCnt, 1)
 	}
+
+	return nil
 }
 
 //TODO add more on ICMP handle logic
@@ -108,7 +110,7 @@ func (t *TraceRoute) ListenIPv4TCP() {
 	}
 }
 
-func (t *TraceRoute) ListenIPv4TCP_ICMP() {
+func (t *TraceRoute) ListenIPv4TCP_ICMP() error {
 	defer t.Stop()
 
 	laddr := &net.IPAddr{IP: t.netSrcAddr}
@@ -117,7 +119,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() {
 	t.recvICMPConn, err = net.ListenIP("ip4:icmp", laddr)
 	if err != nil {
 		logrus.Error("bind failure:", err)
-		return
+		return err
 	}
 	defer t.recvICMPConn.Close()
 
@@ -125,7 +127,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() {
 
 	for {
 		if atomic.LoadInt32(t.stopSignal) == 1 {
-			return
+			return nil
 		}
 
 		buf := make([]byte, 1500)
@@ -161,4 +163,6 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() {
 			}
 		}
 	}
+
+	return nil
 }

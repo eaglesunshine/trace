@@ -12,7 +12,7 @@ import (
 )
 
 // SendIPv4UDP 发送UDP探测包
-func (t *TraceRoute) SendIPv4UDP() {
+func (t *TraceRoute) SendIPv4UDP() error {
 
 	//随机指定发送端口和目标端口
 	dport := uint16(33434 + rand.Int31n(64))
@@ -30,7 +30,7 @@ func (t *TraceRoute) SendIPv4UDP() {
 	conn, err := net.ListenPacket("ip4:udp", t.netSrcAddr.String())
 	if err != nil {
 		logrus.Error(err)
-		return
+		return err
 	}
 	defer conn.Close()
 
@@ -38,7 +38,7 @@ func (t *TraceRoute) SendIPv4UDP() {
 	rSocket, err := ipv4.NewRawConn(conn)
 	if err != nil {
 		logrus.Error("can not create raw socket:", err)
-		return
+		return err
 	}
 	defer rSocket.Close()
 
@@ -72,9 +72,11 @@ func (t *TraceRoute) SendIPv4UDP() {
 
 		//atomic.AddUint64(db.SendCnt, 1)
 	}
+
+	return nil
 }
 
-func (t *TraceRoute) ListenIPv4UDP_ICMP() {
+func (t *TraceRoute) ListenIPv4UDP_ICMP() error {
 	defer t.Stop()
 
 	//获取本地地址（源地址）
@@ -86,7 +88,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() {
 
 	if err != nil {
 		logrus.Error("bind failure:", err)
-		return
+		return err
 	}
 	defer t.recvICMPConn.Close()
 
@@ -96,7 +98,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() {
 	for {
 		//监听stop信号
 		if atomic.LoadInt32(t.stopSignal) == 1 {
-			return
+			return nil
 		}
 
 		//接收ICMP报文最大1500字节
@@ -141,4 +143,5 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() {
 
 	}
 
+	return nil
 }

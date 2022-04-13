@@ -189,25 +189,83 @@ func (t *TraceRoute) ProbeTCP() {
 }
 
 func (t *TraceRoute) TraceUDP()(err error) {
-	//同时发起MaxPath个探测包
+	var wg sync.WaitGroup
+
 	for i := 0; i < t.MaxPath; i++ {
-		go t.SendIPv4UDP()
+		wg.Add(1)
+		go func(handler func() error){
+			defer func() {
+				if e := recover(); e != nil {
+					logrus.Error(e)
+				}
+				wg.Done()
+			}()
+
+			e := handler()
+			if err == nil && e != nil {
+				err = e
+			}
+		}(t.SendIPv4UDP)
 	}
 
 	//接收UDP数据包TTL减为0或者不可达产生的ICMP响应包
-	go t.ListenIPv4UDP_ICMP()
+	wg.Add(1)
+	go func(handler func() error){
+		defer func() {
+			if e := recover(); e != nil {
+				logrus.Error(e)
+			}
+			wg.Done()
+		}()
 
-	return nil
+		e := handler()
+		if err == nil && e != nil {
+			err = e
+		}
+	}(t.ListenIPv4UDP_ICMP)
+
+	wg.Wait()
+
+	return
 }
 
 func (t *TraceRoute) TraceTCP()(err error) {
+	var wg sync.WaitGroup
 	for i := 0; i < t.MaxPath; i++ {
-		go t.SendIPv4TCP()
-	}
-	//go t.ListenIPv4TCP()
-	go t.ListenIPv4TCP_ICMP()
+		wg.Add(1)
+		go func(handler func() error){
+			defer func() {
+				if e := recover(); e != nil {
+					logrus.Error(e)
+				}
+				wg.Done()
+			}()
 
-	return nil
+			e := handler()
+			if err == nil && e != nil {
+				err = e
+			}
+		}(t.SendIPv4TCP)
+	}
+
+	wg.Add(1)
+	go func(handler func() error){
+		defer func() {
+			if e := recover(); e != nil {
+				logrus.Error(e)
+			}
+			wg.Done()
+		}()
+
+		e := handler()
+		if err == nil && e != nil {
+			err = e
+		}
+	}(t.ListenIPv4TCP_ICMP)
+
+	wg.Wait()
+
+	return
 }
 
 func (t *TraceRoute) TraceICMP()(err error) {
