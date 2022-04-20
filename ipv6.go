@@ -11,7 +11,13 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
-func (t *TraceRoute) TraceIpv6ICMP() error {
+func (t *TraceRoute) TraceIpv6ICMP() (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			logrus.Error(e)
+		}
+	}()
+
 	var dst net.IPAddr
 
 	if _, err := t.dnsResolve(t.Dest, &dst); err != nil {
@@ -103,8 +109,12 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 					}
 					hopData.Details = append(hopData.Details, hop)
 
-					isDest = true
-					break
+					t.LastArrived += 1
+					if t.LastArrived == t.MaxPath {
+						isDest = true
+						break
+					}
+
 				}
 			}
 		}
