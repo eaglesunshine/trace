@@ -237,7 +237,7 @@ func GoroutineNotPanic(handlers ...func() error) (err error) {
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
-					buf := make([]byte, 64<<10)
+					buf := make([]byte, 64<<10)		//64*2^10, 64KB
 					buf = buf[:runtime.Stack(buf, false)]
 					err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 				}
