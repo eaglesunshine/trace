@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"runtime"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,9 @@ func (t *TraceRoute) TraceIpv6ICMP() (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Error(e)
+			buf := make([]byte, 64<<10)
+			buf = buf[:runtime.Stack(buf, false)]
+			err = fmt.Errorf("errgroup: panic recovered: %s\n %s", e, buf)
 		}
 	}()
 

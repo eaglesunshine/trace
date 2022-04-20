@@ -3,6 +3,7 @@ package ztrace
 import (
 	"fmt"
 	"net"
+	"runtime"
 	"sync"
 	"time"
 
@@ -159,122 +160,51 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 }
 
 func (t *TraceRoute) TraceUDP() (err error) {
-	var wg sync.WaitGroup
+	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		wg.Add(1)
-		go func(handler func() error) {
-			defer func() {
-				if e := recover(); e != nil {
-					logrus.Error(e)
-				}
-				wg.Done()
-			}()
-
-			e := handler()
-			if err == nil && e != nil {
-				err = e
-			}
-		}(t.SendIPv4UDP)
+		handlers=append(handlers, func() error {
+			return t.SendIPv4UDP()
+		})
 	}
 
-	wg.Add(1)
-	go func(handler func() error) {
-		defer func() {
-			if e := recover(); e != nil {
-				logrus.Error(e)
-			}
-			wg.Done()
-		}()
+	handlers=append(handlers, func() error {
+		return t.ListenIPv4ICMP()
+	})
 
-		e := handler()
-		if err == nil && e != nil {
-			err = e
-		}
-	}(t.ListenIPv4UDP_ICMP)
-
-	wg.Wait()
-
-	return
+	return GoroutineNotPanic(handlers...)
 }
 
 func (t *TraceRoute) TraceTCP() (err error) {
-	var wg sync.WaitGroup
-	for i := 0; i < t.MaxPath; i++ {
-		wg.Add(1)
-		go func(handler func() error) {
-			defer func() {
-				if e := recover(); e != nil {
-					logrus.Error(e)
-				}
-				wg.Done()
-			}()
+	var handlers []func() error
 
-			e := handler()
-			if err == nil && e != nil {
-				err = e
-			}
-		}(t.SendIPv4TCP)
+	for i := 0; i < t.MaxPath; i++ {
+		handlers=append(handlers, func() error {
+			return t.SendIPv4TCP()
+		})
 	}
 
-	wg.Add(1)
-	go func(handler func() error) {
-		defer func() {
-			if e := recover(); e != nil {
-				logrus.Error(e)
-			}
-			wg.Done()
-		}()
+	handlers=append(handlers, func() error {
+		return t.ListenIPv4ICMP()
+	})
 
-		e := handler()
-		if err == nil && e != nil {
-			err = e
-		}
-	}(t.ListenIPv4TCP_ICMP)
-
-	wg.Wait()
-
-	return
+	return GoroutineNotPanic(handlers...)
 }
 
 func (t *TraceRoute) TraceICMP() (err error) {
-	var wg sync.WaitGroup
+	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		wg.Add(1)
-		go func(handler func() error) {
-			defer func() {
-				if e := recover(); e != nil {
-					logrus.Error(e)
-				}
-				wg.Done()
-			}()
-
-			e := handler()
-			if err == nil && e != nil {
-				err = e
-			}
-		}(t.SendIPv4ICMP)
+		handlers=append(handlers, func() error {
+			return t.SendIPv4ICMP()
+		})
 	}
 
-	wg.Add(1)
-	go func(handler func() error) {
-		defer func() {
-			if e := recover(); e != nil {
-				logrus.Error(e)
-			}
-			wg.Done()
-		}()
+	handlers=append(handlers, func() error {
+		return t.ListenIPv4ICMP()
+	})
 
-		e := handler()
-		if err == nil && e != nil {
-			err = e
-		}
-	}(t.ListenIPv4ICMP)
-
-	wg.Wait()
-
-	return
+	return GoroutineNotPanic(handlers...)
 }
 
 func (t *TraceRoute) Run() error {
@@ -294,4 +224,34 @@ func (t *TraceRoute) Run() error {
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")
 	}
 
+}
+
+func GoroutineNotPanic(handlers ...func() error) (err error) {
+	var wg sync.WaitGroup
+
+	for _, f := range handlers {
+		wg.Add(1)
+
+		go func(handler func() error) {
+
+			defer func() {
+				if e := recover(); e != nil {
+					logrus.Error(e)
+					buf := make([]byte, 64<<10)
+					buf = buf[:runtime.Stack(buf, false)]
+					err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
+				}
+				wg.Done()
+			}()
+
+			e := handler()
+			if err == nil && e != nil {
+				err = e
+			}
+		}(f)
+	}
+
+	wg.Wait()
+
+	return
 }
