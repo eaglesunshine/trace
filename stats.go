@@ -6,7 +6,6 @@ import (
 	"net"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/eaglesunshine/trace/stats/describe"
@@ -60,72 +59,50 @@ func (t *TraceRoute) NewServerRecord(ipaddr string, ttl uint8, key string) *Serv
 	return r
 }
 
-func (t *TraceRoute) Stats() error {
-	for {
-		//轮询就绪缓存队列
-		select {
-		case v := <-t.SendChan:
-			tdb, ok := t.DB.Load(v.FlowKey)
-			if !ok {
-				continue
-			}
-			db := tdb.(*StatsDB)
-			db.Cache.Store(v.ID, v, v.TimeStamp)
+func (t *TraceRoute) RecordSend(v *SendMetric) {
+	tdb, ok := t.DB.Load(v.FlowKey)
+	if !ok {
+		return
+	}
+	db := tdb.(*StatsDB)
+	db.Cache.Store(v.ID, v, v.TimeStamp)
+}
 
-		case v := <-t.RecvChan:
-			tdb, ok := t.DB.Load(v.FlowKey)
-			if !ok {
-				continue
-			}
-			db := tdb.(*StatsDB)
-			tsendInfo, valid := db.Cache.Load(v.ID)
-			if !valid {
-				continue
-			}
-			sendInfo := tsendInfo.(*SendMetric)
-
-			//create server
-			server := t.NewServerRecord(v.RespAddr, uint8(sendInfo.TTL), sendInfo.FlowKey)
-
-			//加锁
-			server.Lock.Lock()
-
-			server.RecvCnt++
-			latency := float64(v.TimeStamp.Sub(sendInfo.TimeStamp) / time.Microsecond)
-			//logrus.Info(v.RespAddr, ":", latency)
-
-			server.LatencyDescribe.Append(latency, 2)
-			server.Quantile.Insert(latency)
-
-			if server.Name == "" {
-				go server.LookUPAddr()
-			}
-
-			//解锁
-			server.Lock.Unlock()
-
-			//添加一个server
-			t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
-
-			//判断是否结束
-			if sendInfo.TTL == t.MaxTTL || v.RespAddr == t.netDstAddr.String() {
-				t.LastArrived += 1
-				if t.LastArrived == t.MaxPath {
-					t.Stop()
-					return nil
-				}
-			}
-
-		default:
-			//监听stop信号
-			if atomic.LoadInt32(t.stopSignal) == 1 {
-				return nil
-			}
-		}
-
+func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
+	tdb, ok := t.DB.Load(v.FlowKey)
+	if !ok {
+		return false
 	}
 
-	return nil
+	db := tdb.(*StatsDB)
+	tsendInfo, valid := db.Cache.Load(v.ID)
+	if !valid {
+		return false
+	}
+	sendInfo := tsendInfo.(*SendMetric)
+
+	server := t.NewServerRecord(v.RespAddr, uint8(sendInfo.TTL), sendInfo.FlowKey)
+
+	server.RecvCnt++
+	latency := float64(v.TimeStamp.Sub(sendInfo.TimeStamp) / time.Microsecond)
+
+	server.LatencyDescribe.Append(latency, 2)
+	server.Quantile.Insert(latency)
+
+	if server.Name == "" {
+		server.LookUPAddr()
+	}
+
+	t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
+
+	if sendInfo.TTL == t.MaxTTL || v.RespAddr == t.NetDstAddr.String() {
+		t.LastArrived += 1
+		if t.LastArrived == t.MaxPath {
+			return true
+		}
+	}
+
+	return false
 }
 
 type HopData struct {
@@ -138,79 +115,36 @@ func (t *TraceRoute) GetHopData(id int) (hopData HopData, isDest bool) {
 	hopData.Hop = id
 
 	isDest = false
-	for _, recoreds := range t.Metric[id] {
-		for _, v := range recoreds {
-
-			//logrus.Info("get record ttl:", id)
-
-			RespAddr := v.Addr //第i跳发回ICMP响应包的IP地址
-
-			rtt := fmt.Sprintf("%.2fms", v.LatencyDescribe.Mean/1000) //往返时延
-
-			saddr := fmt.Sprintf("%s", v.Addr) //第i跳的IP地址
-
-			sname := fmt.Sprintf("%s", v.Name) //第i跳的host
-
-			//判断目标IP
-			if RespAddr == t.netDstAddr.String() {
+	for _, records := range t.Metric[id] {
+		for _, v := range records {
+			RespAddr := v.Addr
+			rtt := fmt.Sprintf("%.2fms", v.LatencyDescribe.Mean/1000)
+			saddr := fmt.Sprintf("%s", v.Addr)
+			sname := fmt.Sprintf("%s", v.Name)
+			if RespAddr == t.NetDstAddr.String() {
 				isDest = true
 			}
 
-			//收集一个响应包的数据
 			hop := map[string]interface{}{
 				"rtt":   rtt,
 				"saddr": saddr,
 				"sname": sname,
 			}
 
-			//添加一个node
 			hopData.Details = append(hopData.Details, hop)
 		}
-
 	}
-
-	//logrus.Info("hopData=", hopData)
 
 	return hopData, isDest
 }
 
-func (t *TraceRoute) Statistics() map[string]interface{} {
-	if t.af == "ip4" {
+func (t *TraceRoute) Statistics() {
+	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
+		hopData, isDest := t.GetHopData(ttl)
+		t.Hops = append(t.Hops, hopData)
 
-		//判断是否结束
-		if atomic.LoadInt32(t.stopSignal) != 1 {
-			for {
-				time.Sleep(time.Millisecond * 10)
-
-				if atomic.LoadInt32(t.stopSignal) == 1 {
-					break
-				}
-			}
-		}
-
-		//收集数据
-		for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
-			hopData, isDest := t.GetHopData(ttl)
-			t.hops = append(t.hops, hopData)
-
-			if isDest {
-				break
-			}
+		if isDest {
+			break
 		}
 	}
-
-	//构造返回数据
-	ret := map[string]interface{}{
-		"SrcAddr":    t.SrcAddr,
-		"NetSrcAddr": t.netSrcAddr.String(),
-		"Dest":       t.Dest,
-		"NetDstAddr": t.netDstAddr.String(),
-		"Protocol":   t.Protocol,
-		"MaxPath":    t.MaxPath,
-		"MaxTTL":     t.MaxTTL,
-		"Timeout":    fmt.Sprintf("%s", t.Timeout),
-		"Hops":       t.hops,
-	}
-
-	return ret
 }

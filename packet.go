@@ -116,7 +116,6 @@ func (t *TCPHeader) checksum(ip *ipv4.Header, payload []byte) {
 	t.Checksum = checkSum(b.Bytes())
 }
 
-// BuildIPv4UDPkt 构造UDP探测包，可设置TTL
 func (t *TraceRoute) BuildIPv4UDPkt(srcPort uint16, dstPort uint16, ttl uint8, id uint16, tos int) (*ipv4.Header, []byte) {
 	iph := &ipv4.Header{
 		Version:  ipv4.Version,
@@ -129,8 +128,8 @@ func (t *TraceRoute) BuildIPv4UDPkt(srcPort uint16, dstPort uint16, ttl uint8, i
 		TTL:      int(ttl),
 		Protocol: 17,
 		Checksum: 0,
-		Src:      t.netSrcAddr,
-		Dst:      t.netDstAddr,
+		Src:      t.NetSrcAddr,
+		Dst:      t.NetDstAddr,
 	}
 
 	h, err := iph.Marshal()
@@ -158,7 +157,6 @@ func (t *TraceRoute) BuildIPv4UDPkt(srcPort uint16, dstPort uint16, ttl uint8, i
 	return iph, buf.Bytes()
 }
 
-// BuildIPv4TCPSYN 构造TCP探测包，可设置TTL
 func (t *TraceRoute) BuildIPv4TCPSYN(srcPort uint16, dstPort uint16, ttl uint8, seq uint32, tos int) (*ipv4.Header, []byte) {
 	iph := &ipv4.Header{
 		Version:  ipv4.Version,
@@ -171,8 +169,8 @@ func (t *TraceRoute) BuildIPv4TCPSYN(srcPort uint16, dstPort uint16, ttl uint8, 
 		TTL:      int(ttl),
 		Protocol: 6,
 		Checksum: 0,
-		Src:      t.netSrcAddr,
-		Dst:      t.netDstAddr,
+		Src:      t.NetSrcAddr,
+		Dst:      t.NetDstAddr,
 	}
 
 	h, err := iph.Marshal()
@@ -193,7 +191,6 @@ func (t *TraceRoute) BuildIPv4TCPSYN(srcPort uint16, dstPort uint16, ttl uint8, 
 		Urgent:     0,
 	}
 
-	//payload is TCP Optionheader
 	payload := []byte{0x02, 0x04, 0x05, 0xb4, 0x04, 0x02, 0x08, 0x0a, 0x7f, 0x73, 0xf9, 0x3a, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x07}
 	tcp.checksum(iph, payload)
 
@@ -215,8 +212,8 @@ func (t *TraceRoute) BuildIPv4TCPPRST(srcPort uint16, dstPort uint16, ttl uint8,
 		TTL:      int(ttl),
 		Protocol: 6,
 		Checksum: 0,
-		Src:      t.netSrcAddr,
-		Dst:      t.netDstAddr,
+		Src:      t.NetSrcAddr,
+		Dst:      t.NetDstAddr,
 	}
 
 	h, err := iph.Marshal()
@@ -264,8 +261,8 @@ func (t *TraceRoute) BuildIPv4ICMP(ttl uint8, id, seq uint16, tos int) (*ipv4.He
 		TTL:      int(ttl),
 		Protocol: 1,
 		Checksum: 0,
-		Src:      t.netSrcAddr,
-		Dst:      t.netDstAddr,
+		Src:      t.NetSrcAddr,
+		Dst:      t.NetDstAddr,
 	}
 
 	h, err := iph.Marshal()
@@ -276,7 +273,7 @@ func (t *TraceRoute) BuildIPv4ICMP(ttl uint8, id, seq uint16, tos int) (*ipv4.He
 	iph.Checksum = int(checkSum(h))
 
 	icmp := ICMPHeader{
-		IType:    8, //Echo
+		IType:    8,
 		ICode:    0,
 		Checksum: 0,
 		ID:       id,
@@ -301,16 +298,14 @@ func (t *TraceRoute) BuildIPv4ICMP(ttl uint8, id, seq uint16, tos int) (*ipv4.He
 
 func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error) {
 	isIPv6 := false
-	if t.af == "ip6"{
+	if t.Af == "ip6"{
 		isIPv6 = true
 	}
 
 	ipAddr := net.ParseIP(hostName)
 	if isIPv6 && ipAddr.To16() != nil {
-		//logrus.Info("Using the provided ipv6 address ", ipAddr," for tracing")
 		dst.IP = ipAddr
 	} else if !isIPv6 && ipAddr.To4() != nil {
-		//logrus.Info("Using the provided ipv4 address ", ipAddr, " for tracing")
 		dst.IP = ipAddr
 	} else {
 		ips, err := net.LookupIP(hostName)
@@ -323,11 +318,9 @@ func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error
 		for _, ip := range ips {
 			if isIPv6 && ip.To16() != nil {
 				dst.IP = ip
-				//logrus.Info(hostName, " resolved to ", ip, ", using this ipv6 address for tracing")
 				break
 			} else if !isIPv6 && ip.To4() != nil {
 				dst.IP = ip
-				//logrus.Info(hostName, " resolved to ", ip, ", using this ipv4 address for tracing")
 				break
 			}
 		}

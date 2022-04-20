@@ -7,19 +7,27 @@ import (
 
 func TestTrace(t *testing.T) {
 	c, err := New("icmp", "www.qq.com", "", "ip4", 3, 3, 5)
-	if err!=nil{
+	if err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	//执行
-	if err := c.Run();err!=nil{
+	if err := c.Run(); err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	//收集统计结果
-	ret := c.Statistics()
+	ret := map[string]interface{}{
+		"SrcAddr":    c.SrcAddr,
+		"NetSrcAddr": c.NetSrcAddr.String(),
+		"Dest":       c.Dest,
+		"NetDstAddr": c.NetDstAddr.String(),
+		"Protocol":   c.Protocol,
+		"MaxPath":    c.MaxPath,
+		"MaxTTL":     c.MaxTTL,
+		"Timeout":    fmt.Sprintf("%s", c.Timeout),
+		"Hops":       c.Hops,
+	}
 
 	fmt.Println(ret)
 }

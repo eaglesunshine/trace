@@ -19,8 +19,6 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 		return err
 	}
 
-	//TODO：获取本地ipv6地址
-
 	icmp6Sock, err := net.ListenPacket("ip6:ipv6-icmp", t.SrcAddr)
 	if err != nil {
 		logrus.Error("Could not set a listening ICMP6 socket: ", err)
@@ -79,12 +77,8 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 
 			n, _, node, err := ipv6Sock.ReadFrom(buf)
 
-			//收集一个响应包的数据
 			hop := map[string]interface{}{}
-
-			if err != nil {
-				//fmt.Printf("%d %40s\n", i, "*")
-			} else {
+			if err == nil {
 				answer, err := icmp.ParseMessage(58, buf[:n])
 
 				if err != nil {
@@ -95,7 +89,6 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 				timeCost := time.Since(timeNow)
 
 				if answer.Type == ipv6.ICMPTypeTimeExceeded {
-					//fmt.Printf("%d   %40s   %40s\n", i, node.String(), timeCost)
 
 					hop = map[string]interface{}{
 						"rtt":   fmt.Sprintf("%s", timeCost),
@@ -104,7 +97,6 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 
 					hopData.Details = append(hopData.Details, hop)
 				} else if answer.Type == ipv6.ICMPTypeEchoReply {
-					//fmt.Printf("%d   %40s   %40s\n", i, node.String(), timeCost)
 					hop = map[string]interface{}{
 						"rtt":   fmt.Sprintf("%s", timeCost),
 						"saddr": node.String(),
@@ -113,15 +105,11 @@ func (t *TraceRoute) TraceIpv6ICMP() error {
 
 					isDest = true
 					break
-				} else {
-					//fmt.Printf("%d %40s\n", i, "*")
 				}
-
 			}
-
 		}
 
-		t.hops = append(t.hops, hopData)
+		t.Hops = append(t.Hops, hopData)
 
 		if isDest {
 			break

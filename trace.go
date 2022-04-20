@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/eaglesunshine/trace/tsyncmap"
@@ -34,36 +33,27 @@ type TraceRoute struct {
 	MaxPath       int
 	MaxTTL        uint8
 	Protocol      string
-	PacketRate    float32          //pps
-	SendChan      chan *SendMetric //发送缓存队列
-	RecvChan      chan *RecvMetric //接收缓存队列
+	PacketRate    float32
 	WideMode      bool
 	PortOffset    int32
 
-	netSrcAddr net.IP //used for raw socket and TCP-Traceroute
-	netDstAddr net.IP
+	NetSrcAddr net.IP
+	NetDstAddr net.IP
 
-	af         string //ip4 or ip6
-	stopSignal *int32 //atomic Counters,stop when cnt =1
+	Af string
 
 	recvICMPConn *net.IPConn
 	recvTCPConn  *net.IPConn
 
-	//stats
 	DB        sync.Map
 	Metric    []map[string][]*ServerRecord
 	Latitude  float64
 	Longitude float64
 	Lock      *sync.RWMutex
 
-	//超时时间
-	Timeout time.Duration
-
-	//最后一跳是否到达
+	Timeout     time.Duration
 	LastArrived int
-
-	//trace结果
-	hops []HopData
+	Hops        []HopData
 }
 type StatsDB struct {
 	Cache   *tsyncmap.Map
@@ -81,19 +71,18 @@ func NewStatsDB(key string) *StatsDB {
 	return px
 }
 
-
 func (t *TraceRoute) validateSrcAddress() error {
 	if t.SrcAddr != "" {
-		addr, err := net.ResolveIPAddr(t.af, t.SrcAddr)
+		addr, err := net.ResolveIPAddr(t.Af, t.SrcAddr)
 		if err != nil {
 			return err
 		}
-		t.netSrcAddr = addr.IP
+		t.NetSrcAddr = addr.IP
 		return nil
 	}
 
-	if t.af == "ip6"{
-		t.SrcAddr="::"
+	if t.Af == "ip6" {
+		t.SrcAddr = "::"
 		return nil
 	}
 
@@ -106,9 +95,8 @@ func (t *TraceRoute) validateSrcAddress() error {
 	defer conn.Close()
 
 	result := conn.LocalAddr().(*net.UDPAddr)
-	t.netSrcAddr = result.IP
+	t.NetSrcAddr = result.IP
 
-	//TODO：计算当前IP的经纬度(问题：如何获取到外网IP)
 	return nil
 }
 
@@ -119,21 +107,13 @@ func (t *TraceRoute) VerifyCfg() error {
 		logrus.Error("dst address validation:", err)
 		return err
 	}
-	t.netDstAddr = rAddr
-
-	//logrus.Info("netDstAddr:", t.netDstAddr)
+	t.NetDstAddr = rAddr
 
 	err = t.validateSrcAddress()
 	if err != nil {
 		logrus.Error(err)
 		return err
 	}
-
-	//logrus.Info("netSrcAddr:", t.netSrcAddr)
-
-	var sig int32 = 0
-	t.stopSignal = &sig
-	atomic.StoreInt32(t.stopSignal, 0)
 
 	if t.MaxPath > 32 {
 		logrus.Error("Only support max ECMP = 32")
@@ -151,7 +131,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	result := &TraceRoute{
 		SrcAddr:       src,
 		Dest:          dest,
-		af:            af,
+		Af:            af,
 		TCPDPort:      443,
 		TCPProbePorts: []uint16{80, 8080, 443, 8443},
 		Protocol:      protocol,
@@ -159,8 +139,6 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 		MaxTTL:        uint8(maxTtl),
 		PacketRate:    1,
 		WideMode:      true,
-		SendChan:      make(chan *SendMetric, 10),
-		RecvChan:      make(chan *RecvMetric, 10),
 		PortOffset:    0,
 		Timeout:       time.Duration(timeout) * time.Second,
 	}
@@ -180,20 +158,12 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	return result, nil
 }
 
-// ProbeTCP 持续TCP ping探测
-func (t *TraceRoute) ProbeTCP() {
-	//对指定目标端口进行ping探测
-	for _, port := range t.TCPProbePorts {
-		go t.IPv4TCPProbe(port)
-	}
-}
-
-func (t *TraceRoute) TraceUDP()(err error) {
+func (t *TraceRoute) TraceUDP() (err error) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < t.MaxPath; i++ {
 		wg.Add(1)
-		go func(handler func() error){
+		go func(handler func() error) {
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
@@ -208,9 +178,8 @@ func (t *TraceRoute) TraceUDP()(err error) {
 		}(t.SendIPv4UDP)
 	}
 
-	//接收UDP数据包TTL减为0或者不可达产生的ICMP响应包
 	wg.Add(1)
-	go func(handler func() error){
+	go func(handler func() error) {
 		defer func() {
 			if e := recover(); e != nil {
 				logrus.Error(e)
@@ -229,11 +198,11 @@ func (t *TraceRoute) TraceUDP()(err error) {
 	return
 }
 
-func (t *TraceRoute) TraceTCP()(err error) {
+func (t *TraceRoute) TraceTCP() (err error) {
 	var wg sync.WaitGroup
 	for i := 0; i < t.MaxPath; i++ {
 		wg.Add(1)
-		go func(handler func() error){
+		go func(handler func() error) {
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
@@ -249,7 +218,7 @@ func (t *TraceRoute) TraceTCP()(err error) {
 	}
 
 	wg.Add(1)
-	go func(handler func() error){
+	go func(handler func() error) {
 		defer func() {
 			if e := recover(); e != nil {
 				logrus.Error(e)
@@ -268,12 +237,12 @@ func (t *TraceRoute) TraceTCP()(err error) {
 	return
 }
 
-func (t *TraceRoute) TraceICMP()(err error) {
+func (t *TraceRoute) TraceICMP() (err error) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < t.MaxPath; i++ {
 		wg.Add(1)
-		go func(handler func() error){
+		go func(handler func() error) {
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
@@ -289,7 +258,7 @@ func (t *TraceRoute) TraceICMP()(err error) {
 	}
 
 	wg.Add(1)
-	go func(handler func() error){
+	go func(handler func() error) {
 		defer func() {
 			if e := recover(); e != nil {
 				logrus.Error(e)
@@ -309,64 +278,20 @@ func (t *TraceRoute) TraceICMP()(err error) {
 }
 
 func (t *TraceRoute) Run() error {
-	if t.af == "ip6" {
+	if t.Af == "ip6" {
 		return t.TraceIpv6ICMP()
 	}
 
 	switch t.Protocol {
 	case "tcp":
-		return GoroutineNotPanic(t.Stats, t.TraceTCP)
+		return t.TraceTCP()
 	case "udp":
-		return GoroutineNotPanic(t.Stats, t.TraceUDP)
+		return t.TraceUDP()
 	case "icmp":
-		return GoroutineNotPanic(t.Stats, t.TraceICMP)
+		return t.TraceICMP()
 
 	default:
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")
 	}
 
-}
-
-
-func (t *TraceRoute) Stop() {
-	if atomic.LoadInt32(t.stopSignal) == 1 {
-		return
-	}
-
-	//logrus.Warn("ip4 trace stop!!")
-
-	//设置stop信号
-	atomic.StoreInt32(t.stopSignal, 1)
-
-	//关闭ICMP响应报文接收通道
-	if t.recvICMPConn != nil{
-		t.recvICMPConn.Close()
-	}
-
-	//t.recvTCPConn.Close()
-}
-
-func GoroutineNotPanic(handlers ...func() error) (err error) {
-	var wg sync.WaitGroup
-	for _, f := range handlers {
-		wg.Add(1)
-		go func(handler func() error) {
-			defer func() {
-				if e := recover(); e != nil {
-					logrus.Error(e)
-				}
-				wg.Done()
-			}()
-
-			// 取第一个报错的handler调用逻辑，并最终向外返回
-			e := handler()
-			if err == nil && e != nil {
-				err = e
-			}
-		}(f)
-	}
-
-	wg.Wait()
-
-	return
 }
