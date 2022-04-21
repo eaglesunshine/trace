@@ -128,8 +128,17 @@ func (t *TraceRoute) VerifyCfg() error {
 	return nil
 }
 
-func New(protocol string, dest string, src string, af string, maxPath int64, maxTtl int64, timeout int64) (*TraceRoute, error) {
-	result := &TraceRoute{
+func New(protocol string, dest string, src string, af string, maxPath int64, maxTtl int64, timeout int64) (result *TraceRoute, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			logrus.Error(e)
+			buf := make([]byte, 64<<10)		//64*2^10, 64KB
+			buf = buf[:runtime.Stack(buf, false)]
+			err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
+		}
+	}()
+
+	result = &TraceRoute{
 		SrcAddr:       src,
 		Dest:          dest,
 		Af:            af,
