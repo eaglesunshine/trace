@@ -90,9 +90,8 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					TimeStamp: time.Now(),
 				}
 
-				if t.RecordRecv(m) {
-					break
-				}
+				logrus.Info(*m)
+				t.RecordRecv(m)
 			}
 		}
 	}
