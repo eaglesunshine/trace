@@ -23,6 +23,7 @@ type ServerRecord struct {
 	Quantile        *quantile.Stream
 	RecvCnt         uint64
 	Lock            *sync.Mutex
+	Rtt             float64
 }
 
 func (s *ServerRecord) LookUPAddr() {
@@ -94,10 +95,12 @@ func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp
 	server := t.NewServerRecord(addr, ttl, key)
 
 	server.RecvCnt++
-	latency := float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Microsecond)
 
-	server.LatencyDescribe.Append(latency, 2)
-	server.Quantile.Insert(latency)
+	server.Rtt = float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Microsecond)
+
+	// latency := float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Microsecond)
+	// server.LatencyDescribe.Append(latency, 2)
+	// server.Quantile.Insert(latency)
 
 	if server.Name == "" {
 		server.LookUPAddr()
@@ -131,7 +134,7 @@ func (t *TraceRoute) GetHopData(id int) (hopData HopData, isDest bool) {
 		for _, v := range records {
 			RespAddr := v.Addr
 			//rtt := fmt.Sprintf("%.2fms", v.LatencyDescribe.Mean/1000)
-			rtt := v.LatencyDescribe.Mean / 1000
+			rtt := v.Rtt
 			saddr := fmt.Sprintf("%s", v.Addr)
 			sname := fmt.Sprintf("%s", v.Name)
 			if RespAddr == t.NetDstAddr.String() {
