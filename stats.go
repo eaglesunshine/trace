@@ -129,7 +129,8 @@ func (t *TraceRoute) GetHopData(id int) (hopData HopData, isDest bool) {
 	for _, records := range t.Metric[id] {
 		for _, v := range records {
 			RespAddr := v.Addr
-			rtt := fmt.Sprintf("%.2fms", v.LatencyDescribe.Mean/1000)
+			//rtt := fmt.Sprintf("%.2fms", v.LatencyDescribe.Mean/1000)
+			rtt := v.LatencyDescribe.Mean / 1000
 			saddr := fmt.Sprintf("%s", v.Addr)
 			sname := fmt.Sprintf("%s", v.Name)
 			if RespAddr == t.NetDstAddr.String() {
