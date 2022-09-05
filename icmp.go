@@ -90,8 +90,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					RespAddr:  raddr.String(),
 					TimeStamp: time.Now(),
 				}
-
-				logrus.Info(*m)
+				
 				if t.RecordRecv(m) {
 					break
 				}
@@ -100,7 +99,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			ttl := binary.BigEndian.Uint16(buf[6:8])
 			t.addLastHop(uint8(ttl))
 		}
-		
+
 	}
 
 	t.Statistics()
