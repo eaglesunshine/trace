@@ -77,7 +77,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() error {
 
 		icmpType := buf[0]
 
-		if (icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) {
+		if (raddr.String() == t.NetDstAddr.String() || icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) {
 			seq := binary.BigEndian.Uint32(buf[32:36])
 			dstip := net.IP(buf[24:28])
 			srcip := net.IP(buf[20:24])
