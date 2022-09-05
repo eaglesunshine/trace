@@ -46,15 +46,17 @@ type TraceRoute struct {
 	recvICMPConn *net.IPConn
 	recvTCPConn  *net.IPConn
 
-	DB        sync.Map
-	Metric    []map[string][]*ServerRecord
-	Latitude  float64
-	Longitude float64
-	Lock      *sync.RWMutex
+	DB         sync.Map
+	Metric     []map[string][]*ServerRecord
+	LastMetric []map[string][]*ServerRecord
+	Latitude   float64
+	Longitude  float64
+	Lock       *sync.RWMutex
 
 	Timeout     time.Duration
 	LastArrived int
 	Hops        []HopData
+	StartTime   time.Time
 }
 type StatsDB struct {
 	Cache   *tsyncmap.Map
@@ -132,7 +134,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Error(e)
-			buf := make([]byte, 64<<10)		//64*2^10, 64KB
+			buf := make([]byte, 64<<10) //64*2^10, 64KB
 			buf = buf[:runtime.Stack(buf, false)]
 			err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 		}
@@ -162,8 +164,10 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	//logrus.Info("VerifyCfg passed: ", result.netSrcAddr, " -> ", result.netDstAddr)
 
 	result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
+	result.LastMetric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
 	for i := 0; i < len(result.Metric); i++ {
 		result.Metric[i] = make(map[string][]*ServerRecord)
+		result.LastMetric[i] = make(map[string][]*ServerRecord)
 	}
 	return result, nil
 }
@@ -172,12 +176,12 @@ func (t *TraceRoute) TraceUDP() (err error) {
 	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		handlers=append(handlers, func() error {
+		handlers = append(handlers, func() error {
 			return t.SendIPv4UDP()
 		})
 	}
 
-	handlers=append(handlers, func() error {
+	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
 
@@ -188,12 +192,12 @@ func (t *TraceRoute) TraceTCP() (err error) {
 	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		handlers=append(handlers, func() error {
+		handlers = append(handlers, func() error {
 			return t.SendIPv4TCP()
 		})
 	}
 
-	handlers=append(handlers, func() error {
+	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
 
@@ -204,12 +208,12 @@ func (t *TraceRoute) TraceICMP() (err error) {
 	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		handlers=append(handlers, func() error {
+		handlers = append(handlers, func() error {
 			return t.SendIPv4ICMP()
 		})
 	}
 
-	handlers=append(handlers, func() error {
+	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
 
@@ -246,7 +250,7 @@ func GoroutineNotPanic(handlers ...func() error) (err error) {
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
-					buf := make([]byte, 64<<10)		//64*2^10, 64KB
+					buf := make([]byte, 64<<10) //64*2^10, 64KB
 					buf = buf[:runtime.Stack(buf, false)]
 					err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 				}

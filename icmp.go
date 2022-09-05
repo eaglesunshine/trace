@@ -33,6 +33,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	id := uint16(1)
 	mod := uint16(1 << 15)
 
+	t.StartTime = time.Now()
 	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
 		hdr, payload := t.BuildIPv4ICMP(uint8(ttl), id, id, 0)
 		rSocket.WriteTo(hdr, payload, nil)
@@ -74,7 +75,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 
 		icmpType := buf[0]
 
-		if (raddr.String() == t.NetDstAddr.String() || icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) {
+		if (icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) {
 			id := binary.BigEndian.Uint16(buf[32:34])
 
 			dstip := net.IP(buf[24:28])
@@ -90,11 +91,16 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					TimeStamp: time.Now(),
 				}
 
+				logrus.Info(*m)
 				if t.RecordRecv(m) {
 					break
 				}
 			}
+		} else if raddr.String() == t.NetDstAddr.String() {
+			ttl := binary.BigEndian.Uint16(buf[6:8])
+			t.addLastHop(uint8(ttl))
 		}
+		
 	}
 
 	t.Statistics()

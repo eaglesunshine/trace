@@ -37,6 +37,7 @@ func (t *TraceRoute) SendIPv4UDP() error {
 	id := uint16(1)
 	mod := uint16(1 << 15)
 
+	t.StartTime = time.Now()
 	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
 		hdr, payload := t.BuildIPv4UDPkt(sport, dport, uint8(ttl), id, 0)
 		id = (id + 1) % mod

@@ -12,6 +12,8 @@ import (
 	"github.com/eaglesunshine/trace/stats/quantile"
 )
 
+var recordLock sync.Mutex
+
 type ServerRecord struct {
 	TTL             uint8
 	Addr            string
@@ -81,10 +83,17 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	}
 	sendInfo := tsendInfo.(*SendMetric)
 
-	server := t.NewServerRecord(v.RespAddr, uint8(sendInfo.TTL), sendInfo.FlowKey)
+	server := t.getServer(v.RespAddr, sendInfo.TTL, sendInfo.FlowKey, v.TimeStamp)
+	t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
+
+	return false
+}
+
+func (t *TraceRoute) getServer(addr string, ttl uint8, key string, timeStamp time.Time) *ServerRecord {
+	server := t.NewServerRecord(addr, ttl, key)
 
 	server.RecvCnt++
-	latency := float64(v.TimeStamp.Sub(sendInfo.TimeStamp) / time.Microsecond)
+	latency := float64(timeStamp.Sub(t.StartTime) / time.Microsecond)
 
 	server.LatencyDescribe.Append(latency, 2)
 	server.Quantile.Insert(latency)
@@ -93,16 +102,18 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 		server.LookUPAddr()
 	}
 
-	t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
+	return server
+}
 
-	if sendInfo.TTL == t.MaxTTL || v.RespAddr == t.NetDstAddr.String() {
-		t.LastArrived += 1
-		if t.LastArrived == t.MaxPath {
-			return true
-		}
+func (t *TraceRoute) addLastHop(ttl uint8) {
+	recordLock.Lock()
+	defer recordLock.Unlock()
+
+	t.LastArrived += 1
+	if t.LastArrived <= t.MaxPath {
+		server := t.getServer(t.NetDstAddr.String(), ttl, "", time.Now())
+		t.Metric[ttl][t.NetDstAddr.String()] = append(t.Metric[ttl][t.NetDstAddr.String()], server)
 	}
-
-	return false
 }
 
 type HopData struct {
@@ -139,6 +150,15 @@ func (t *TraceRoute) GetHopData(id int) (hopData HopData, isDest bool) {
 }
 
 func (t *TraceRoute) Statistics() {
+	//合并最后一跳的数据
+	minTtl := t.MaxTTL
+	for ttl, _ := range t.LastMetric {
+		if uint8(ttl) <= minTtl && len(t.LastMetric[ttl][t.NetDstAddr.String()]) > 0 {
+			minTtl = uint8(ttl)
+		}
+	}
+	t.Metric[minTtl] = t.LastMetric[minTtl]
+
 	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
 		hopData, isDest := t.GetHopData(ttl)
 		t.Hops = append(t.Hops, hopData)
