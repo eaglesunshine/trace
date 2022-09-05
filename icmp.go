@@ -46,8 +46,6 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 		id = (id + 1) % mod
 
 		t.RecordSend(m)
-
-		time.Sleep(time.Microsecond * time.Duration(1000000/t.PacketRate))
 	}
 
 	return nil
@@ -76,7 +74,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 
 		icmpType := buf[0]
 
-		logrus.Info(raddr, "|", icmpType, "|", n)
 		if (icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) {
 			id := binary.BigEndian.Uint16(buf[32:34])
 
@@ -93,7 +90,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					TimeStamp: time.Now(),
 				}
 
-				logrus.Info(*m)
 				if t.RecordRecv(m) {
 					break
 				}
