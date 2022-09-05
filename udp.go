@@ -79,6 +79,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() error {
 
 		icmpType := buf[0]
 
+		logrus.Info(raddr, "|", icmpType, "|", n)
 		if (icmpType == 11 || (icmpType == 3 && buf[1] == 3)) && (n >= 36) {
 			id := binary.BigEndian.Uint16(buf[12:14])
 			dstip := net.IP(buf[24:28])
