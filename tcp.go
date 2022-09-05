@@ -36,7 +36,6 @@ func (t *TraceRoute) SendIPv4TCP() error {
 	seq := uint32(1000)
 	mod := uint32(1 << 30)
 
-	t.StartTime = time.Now()
 	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
 		hdr, payload := t.BuildIPv4TCPSYN(sport, dport, uint8(ttl), seq, 0)
 		rSocket.WriteTo(hdr, payload, nil)
@@ -51,6 +50,7 @@ func (t *TraceRoute) SendIPv4TCP() error {
 
 		t.RecordSend(m)
 	}
+	t.StartTime = time.Now()
 
 	return nil
 }
@@ -95,9 +95,7 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() error {
 					TimeStamp: time.Now(),
 				}
 
-				if t.RecordRecv(m) {
-					break
-				}
+				t.RecordRecv(m)
 			}
 		}
 	}

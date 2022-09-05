@@ -37,7 +37,6 @@ func (t *TraceRoute) SendIPv4UDP() error {
 	id := uint16(1)
 	mod := uint16(1 << 15)
 
-	t.StartTime = time.Now()
 	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
 		hdr, payload := t.BuildIPv4UDPkt(sport, dport, uint8(ttl), id, 0)
 		id = (id + 1) % mod
@@ -52,6 +51,7 @@ func (t *TraceRoute) SendIPv4UDP() error {
 
 		t.RecordSend(m)
 	}
+	t.StartTime = time.Now()
 
 	return nil
 }
@@ -97,9 +97,7 @@ func (t *TraceRoute) ListenIPv4UDP_ICMP() error {
 					TimeStamp: time.Now(),
 				}
 
-				if t.RecordRecv(m) {
-					break
-				}
+				t.RecordRecv(m)
 			}
 		}
 	}

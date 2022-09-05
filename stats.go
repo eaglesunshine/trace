@@ -83,17 +83,18 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	}
 	sendInfo := tsendInfo.(*SendMetric)
 
-	server := t.getServer(v.RespAddr, sendInfo.TTL, sendInfo.FlowKey, v.TimeStamp)
+	server := t.getServer(v.RespAddr, sendInfo.TTL, sendInfo.FlowKey, sendInfo.TimeStamp, v.TimeStamp)
 	t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
 
 	return false
 }
 
-func (t *TraceRoute) getServer(addr string, ttl uint8, key string, timeStamp time.Time) *ServerRecord {
+func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp,
+	receiveTimeStamp time.Time) *ServerRecord {
 	server := t.NewServerRecord(addr, ttl, key)
 
 	server.RecvCnt++
-	latency := float64(timeStamp.Sub(t.StartTime) / time.Microsecond)
+	latency := float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Microsecond)
 
 	server.LatencyDescribe.Append(latency, 2)
 	server.Quantile.Insert(latency)
@@ -111,7 +112,7 @@ func (t *TraceRoute) addLastHop(ttl uint8) {
 
 	t.LastArrived += 1
 	if t.LastArrived <= t.MaxPath {
-		server := t.getServer(t.NetDstAddr.String(), ttl, "", time.Now())
+		server := t.getServer(t.NetDstAddr.String(), ttl, "", t.StartTime, time.Now())
 		t.Metric[ttl][t.NetDstAddr.String()] = append(t.Metric[ttl][t.NetDstAddr.String()], server)
 	}
 }
