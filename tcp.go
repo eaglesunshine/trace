@@ -102,6 +102,5 @@ func (t *TraceRoute) ListenIPv4TCP_ICMP() error {
 	}
 
 	t.Statistics()
-
 	return nil
 }
