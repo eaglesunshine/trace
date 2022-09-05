@@ -95,12 +95,12 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 
 	t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
 
-	if sendInfo.TTL == t.MaxTTL || v.RespAddr == t.NetDstAddr.String() {
-		t.LastArrived += 1
-		if t.LastArrived == t.MaxPath {
-			return true
-		}
-	}
+	//if sendInfo.TTL == t.MaxTTL || v.RespAddr == t.NetDstAddr.String() {
+	//	t.LastArrived += 1
+	//	if t.LastArrived == t.MaxPath {
+	//		return true
+	//	}
+	//}
 
 	return false
 }
