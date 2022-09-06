@@ -12,8 +12,6 @@ import (
 	"github.com/eaglesunshine/trace/stats/quantile"
 )
 
-var recordLock sync.Mutex
-
 type ServerRecord struct {
 	TTL             uint8
 	Addr            string
@@ -96,11 +94,7 @@ func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp
 
 	server.RecvCnt++
 
-	server.Rtt = float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Microsecond)
-
-	// latency := float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Microsecond)
-	// server.LatencyDescribe.Append(latency, 2)
-	// server.Quantile.Insert(latency)
+	server.Rtt = float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Nanosecond)
 
 	if server.Name == "" {
 		server.LookUPAddr()
@@ -110,8 +104,8 @@ func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp
 }
 
 func (t *TraceRoute) addLastHop(ttl uint8) {
-	recordLock.Lock()
-	defer recordLock.Unlock()
+	t.RecordLock.Lock()
+	defer t.RecordLock.Unlock()
 
 	t.LastArrived += 1
 	if t.LastArrived <= t.MaxPath {

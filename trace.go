@@ -57,6 +57,8 @@ type TraceRoute struct {
 	LastArrived int
 	Hops        []HopData
 	StartTime   time.Time
+	RecordLock  sync.Mutex
+	SendMap     map[string]*SendMetric
 }
 type StatsDB struct {
 	Cache   *tsyncmap.Map
@@ -64,8 +66,8 @@ type StatsDB struct {
 }
 
 func NewStatsDB(key string) *StatsDB {
-	cacheTimeout := time.Duration(6 * time.Second)
-	checkFreq := time.Duration(1 * time.Second)
+	cacheTimeout := 6 * time.Second
+	checkFreq := 1 * time.Second
 	var cnt uint64
 	px := &StatsDB{
 		Cache:   tsyncmap.NewMap(key, cacheTimeout, checkFreq, false),
