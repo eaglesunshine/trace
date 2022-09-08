@@ -95,7 +95,9 @@ func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp
 	server.RecvCnt++
 
 	server.Rtt = float64(receiveTimeStamp.Sub(sendTimeStamp) / time.Nanosecond)
-
+	elapsed1 := receiveTimeStamp.Sub(sendTimeStamp)
+	fmt.Println(elapsed1)
+	
 	if server.Name == "" {
 		server.LookUPAddr()
 	}
