@@ -3,13 +3,11 @@ package ztrace
 import (
 	"bytes"
 	"fmt"
+	"github.com/eaglesunshine/trace/stats/describe"
+	"github.com/eaglesunshine/trace/stats/quantile"
 	"net"
 	"strings"
 	"sync"
-	"time"
-
-	"github.com/eaglesunshine/trace/stats/describe"
-	"github.com/eaglesunshine/trace/stats/quantile"
 )
 
 type ServerRecord struct {
@@ -84,7 +82,8 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	server := t.NewServerRecord(v.RespAddr, uint8(sendInfo.TTL), sendInfo.FlowKey)
 
 	server.RecvCnt++
-	latency := float64(v.TimeStamp.Sub(sendInfo.TimeStamp) / time.Microsecond)
+	//latency := float64(v.TimeStamp.Sub(sendInfo.TimeStamp) / time.Microsecond)
+	latency := float64(v.TimeStamp.Sub(sendInfo.TimeStamp).Microseconds())
 
 	server.LatencyDescribe.Append(latency, 2)
 	server.Quantile.Insert(latency)

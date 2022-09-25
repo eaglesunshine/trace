@@ -132,7 +132,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Error(e)
-			buf := make([]byte, 64<<10)		//64*2^10, 64KB
+			buf := make([]byte, 64<<10) //64*2^10, 64KB
 			buf = buf[:runtime.Stack(buf, false)]
 			err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 		}
@@ -172,12 +172,12 @@ func (t *TraceRoute) TraceUDP() (err error) {
 	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		handlers=append(handlers, func() error {
+		handlers = append(handlers, func() error {
 			return t.SendIPv4UDP()
 		})
 	}
 
-	handlers=append(handlers, func() error {
+	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
 
@@ -188,12 +188,12 @@ func (t *TraceRoute) TraceTCP() (err error) {
 	var handlers []func() error
 
 	for i := 0; i < t.MaxPath; i++ {
-		handlers=append(handlers, func() error {
+		handlers = append(handlers, func() error {
 			return t.SendIPv4TCP()
 		})
 	}
 
-	handlers=append(handlers, func() error {
+	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
 
@@ -203,13 +203,14 @@ func (t *TraceRoute) TraceTCP() (err error) {
 func (t *TraceRoute) TraceICMP() (err error) {
 	var handlers []func() error
 
-	for i := 0; i < t.MaxPath; i++ {
-		handlers=append(handlers, func() error {
-			return t.SendIPv4ICMP()
-		})
-	}
+	handlers = append(handlers, t.SendIPv4ICMP)
+	//for i := 0; i < t.MaxPath; i++ {
+	//	handlers=append(handlers, func() error {
+	//		return t.SendIPv4ICMP()
+	//	})
+	//}
 
-	handlers=append(handlers, func() error {
+	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
 
@@ -246,7 +247,7 @@ func GoroutineNotPanic(handlers ...func() error) (err error) {
 			defer func() {
 				if e := recover(); e != nil {
 					logrus.Error(e)
-					buf := make([]byte, 64<<10)		//64*2^10, 64KB
+					buf := make([]byte, 64<<10) //64*2^10, 64KB
 					buf = buf[:runtime.Stack(buf, false)]
 					err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 				}
