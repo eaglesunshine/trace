@@ -209,12 +209,14 @@ func (t *TraceRoute) TraceTCP() (err error) {
 func (t *TraceRoute) TraceICMP() (err error) {
 	var handlers []func() error
 
-	for i := 0; i < t.MaxPath; i++ {
-		handlers = append(handlers, func() error {
-			return t.SendIPv4ICMP()
-		})
-	}
-
+	//for i := 0; i < t.MaxPath; i++ {
+	//	handlers = append(handlers, func() error {
+	//		return t.SendIPv4ICMP()
+	//	})
+	//}
+	handlers = append(handlers, func() error {
+		return t.SendIPv4ICMP()
+	})
 	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
 	})
