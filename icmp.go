@@ -3,6 +3,7 @@ package ztrace
 import (
 	"encoding/binary"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -30,33 +31,34 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	}
 	defer rSocket.Close()
 
-	id := uint16(1)
 	mod := uint16(1 << 15)
 
-	for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
-		hdr, payload := t.BuildIPv4ICMP(uint8(ttl), id, id, 0)
-		rSocket.WriteTo(hdr, payload, nil)
-
-		m := &SendMetric{
-			FlowKey:   key,
-			ID:        uint32(hdr.ID),
-			TTL:       uint8(ttl),
-			TimeStamp: time.Now(),
+	for snt := 0; snt < t.MaxPath; snt++ {
+		id := uint16(1)
+		for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
+			hdr, payload := t.BuildIPv4ICMP(uint8(ttl), id, id, 0)
+			rSocket.WriteTo(hdr, payload, nil)
+			m := &SendMetric{
+				FlowKey:   key,
+				ID:        uint32(hdr.ID),
+				TTL:       uint8(ttl),
+				TimeStamp: time.Now(),
+			}
+			id = (id + 1) % mod
+			t.RecordSend(m)
 		}
-		id = (id + 1) % mod
-
-		t.RecordSend(m)
 	}
+
 	t.StartTime = time.Now()
 
 	return nil
 }
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
-	laddr := &net.IPAddr{IP: t.NetSrcAddr}
+	//laddr := &net.IPAddr{IP: t.NetSrcAddr}
 
 	var err error
-	t.recvICMPConn, err = net.ListenIP("ip4:icmp", laddr)
+	t.recvICMPConn, err = net.ListenPacket("ip4:icmp", t.NetSrcAddr.String())
 
 	if err != nil {
 		logrus.Error("bind failure:", err)
@@ -93,10 +95,26 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 
 				t.RecordRecv(m)
 			}
-		} else if raddr.String() == t.NetDstAddr.String() {
-			ttl := binary.BigEndian.Uint16(buf[6:8])
-			t.addLastHop(uint8(ttl))
 		}
+		if icmpType == 0 {
+			key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
+			id := binary.BigEndian.Uint16(buf[32:34])
+			m := &RecvMetric{
+				FlowKey:   key,
+				ID:        uint32(id),
+				RespAddr:  raddr.String(),
+				TimeStamp: time.Now(),
+			}
+
+			t.RecordRecv(m)
+		}
+		if atomic.LoadInt32(t.stopSignal) == 1 || time.Now().Sub(t.StartTime).Seconds() > 30 {
+			break
+		}
+		//else if raddr.String() == t.NetDstAddr.String() {
+		//ttl := binary.BigEndian.Uint16(buf[6:8])
+		//t.addLastHop(uint8(ttl))
+		//}
 
 	}
 

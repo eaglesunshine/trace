@@ -5,6 +5,7 @@ import (
 	"net"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/eaglesunshine/trace/tsyncmap"
@@ -37,17 +38,20 @@ type TraceRoute struct {
 	PacketRate    float32
 	WideMode      bool
 	PortOffset    int32
+	EndPoint      uint8
 
 	NetSrcAddr net.IP
 	NetDstAddr net.IP
 
 	Af string
 
-	recvICMPConn *net.IPConn
+	stopSignal *int32
+
+	recvICMPConn net.PacketConn
 	recvTCPConn  *net.IPConn
 
 	DB         sync.Map
-	Metric     []map[string][]*ServerRecord
+	Metric     []*ServerRecord
 	LastMetric []map[string][]*ServerRecord
 	Latitude   float64
 	Longitude  float64
@@ -114,6 +118,10 @@ func (t *TraceRoute) VerifyCfg() error {
 	}
 	t.NetDstAddr = rAddr
 
+	var sig int32 = 0
+	t.stopSignal = &sig
+	atomic.StoreInt32(t.stopSignal, 0)
+
 	err = t.validateSrcAddress()
 	if err != nil {
 		logrus.Error(err)
@@ -155,6 +163,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 		WideMode:      true,
 		PortOffset:    0,
 		Timeout:       time.Duration(timeout) * time.Second,
+		EndPoint:      uint8(maxTtl),
 	}
 
 	if err := result.VerifyCfg(); err != nil {
@@ -162,15 +171,32 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 		return nil, err
 	}
 	result.Lock = &sync.RWMutex{}
-
+	result.Metric = make([]*ServerRecord, int(maxTtl)+1)
+	for i := 1; i <= int(maxTtl); i++ {
+		result.Metric[i] = &ServerRecord{
+			TTL:      uint8(i),
+			Addr:     "???",
+			Name:     "",
+			Session:  "",
+			RecvCnt:  0,
+			Lock:     &sync.Mutex{},
+			LastTime: time.Duration(0),
+			WrstTime: time.Duration(0),
+			BestTime: time.Duration(0),
+			AvgTime:  time.Duration(0),
+			AllTime:  time.Duration(0),
+			SuccSum:  0,
+			Success:  false,
+		}
+	}
 	//logrus.Info("VerifyCfg passed: ", result.netSrcAddr, " -> ", result.netDstAddr)
 
-	result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
-	result.LastMetric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
-	for i := 0; i < len(result.Metric); i++ {
-		result.Metric[i] = make(map[string][]*ServerRecord)
-		result.LastMetric[i] = make(map[string][]*ServerRecord)
-	}
+	//result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
+	//result.LastMetric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
+	//for i := 0; i < len(result.Metric); i++ {
+	//	result.Metric[i] = make(map[string][]*ServerRecord)
+	//	result.LastMetric[i] = make(map[string][]*ServerRecord)
+	//}
 	return result, nil
 }
 
