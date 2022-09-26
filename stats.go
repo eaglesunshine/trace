@@ -197,6 +197,21 @@ type HopData struct {
 //}
 
 func (t *TraceRoute) Statistics() {
+	var buffer bytes.Buffer
+	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", time.Now().Format("2006-01-02 15:04:05"), t.Dest))
+	buffer.WriteString(fmt.Sprintf("%-3v %-48v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
+
+	for index, item := range t.Metric[0:t.EndPoint] {
+		if index == 0 {
+			continue
+		}
+		if item.Success {
+			buffer.WriteString(fmt.Sprintf("%-3d %-48v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, item.Addr, 3.3, '%', t.MaxPath, Time2Float(item.LastTime), Time2Float(item.AvgTime), Time2Float(item.BestTime), Time2Float(item.WrstTime)))
+		} else {
+			buffer.WriteString(fmt.Sprintf("%-3d %-48v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, "???", float32(100), '%', int(0), float32(0), float32(0), float32(0), float32(0)))
+		}
+	}
+	t.HopStr = buffer.String()
 	//合并最后一跳的数据
 	//minTtl := t.MaxTTL
 	//for ttl, _ := range t.LastMetric {
@@ -214,4 +229,8 @@ func (t *TraceRoute) Statistics() {
 	//		break
 	//	}
 	//}
+}
+
+func Time2Float(t time.Duration) float32 {
+	return (float32)(t/time.Microsecond) / float32(1000)
 }

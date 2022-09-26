@@ -63,6 +63,7 @@ type TraceRoute struct {
 	StartTime   time.Time
 	RecordLock  sync.Mutex
 	SendMap     map[string]*SendMetric
+	HopStr      string
 }
 type StatsDB struct {
 	Cache   *tsyncmap.Map
