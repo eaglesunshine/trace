@@ -137,7 +137,7 @@ func (t *TraceRoute) IsFinish() bool {
 					return true
 				}
 			} else {
-				if cur.Sub(t.StartTime).Seconds() > 3 {
+				if cur.Sub(t.StartTime).Seconds() > 20 {
 					return true
 				}
 			}
