@@ -38,7 +38,8 @@ type TraceRoute struct {
 	PacketRate    float32
 	WideMode      bool
 	PortOffset    int32
-	EndPoint      uint8
+	EndPoint      int64
+	SendTimeMap   map[int]time.Time
 
 	NetSrcAddr net.IP
 	NetDstAddr net.IP
@@ -47,7 +48,7 @@ type TraceRoute struct {
 
 	stopSignal *int32
 
-	recvICMPConn net.PacketConn
+	recvICMPConn *net.IPConn
 	recvTCPConn  *net.IPConn
 
 	DB         sync.Map
@@ -61,6 +62,7 @@ type TraceRoute struct {
 	LastArrived int
 	Hops        []HopData
 	StartTime   time.Time
+	EndTime     time.Time
 	RecordLock  sync.Mutex
 	SendMap     map[string]*SendMetric
 	HopStr      string
@@ -164,7 +166,8 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 		WideMode:      true,
 		PortOffset:    0,
 		Timeout:       time.Duration(timeout) * time.Second,
-		EndPoint:      uint8(maxTtl),
+		EndPoint:      maxTtl,
+		SendTimeMap:   make(map[int]time.Time, 0),
 	}
 
 	if err := result.VerifyCfg(); err != nil {
@@ -181,6 +184,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 			Session:  "",
 			RecvCnt:  0,
 			Lock:     &sync.Mutex{},
+			Loss:     100,
 			LastTime: time.Duration(0),
 			WrstTime: time.Duration(0),
 			BestTime: time.Duration(0),
@@ -190,14 +194,6 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 			Success:  false,
 		}
 	}
-	//logrus.Info("VerifyCfg passed: ", result.netSrcAddr, " -> ", result.netDstAddr)
-
-	//result.Metric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
-	//result.LastMetric = make([]map[string][]*ServerRecord, int(maxTtl)+1)
-	//for i := 0; i < len(result.Metric); i++ {
-	//	result.Metric[i] = make(map[string][]*ServerRecord)
-	//	result.LastMetric[i] = make(map[string][]*ServerRecord)
-	//}
 	return result, nil
 }
 

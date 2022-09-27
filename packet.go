@@ -205,7 +205,7 @@ func (t *TraceRoute) BuildIPv4TCPPRST(srcPort uint16, dstPort uint16, ttl uint8,
 		Version:  ipv4.Version,
 		TOS:      tos,
 		Len:      ipv4.HeaderLen,
-		TotalLen: 40,
+		TotalLen: 60,
 		ID:       0,
 		Flags:    0,
 		FragOff:  0,
@@ -254,7 +254,7 @@ func (t *TraceRoute) BuildIPv4ICMP(ttl uint8, id, seq uint16, tos int) (*ipv4.He
 		Version:  ipv4.Version,
 		TOS:      tos,
 		Len:      ipv4.HeaderLen,
-		TotalLen: 40,
+		TotalLen: 60,
 		ID:       int(id),
 		Flags:    0,
 		FragOff:  0,
@@ -298,7 +298,7 @@ func (t *TraceRoute) BuildIPv4ICMP(ttl uint8, id, seq uint16, tos int) (*ipv4.He
 
 func (t *TraceRoute) dnsResolve(hostName string, dst *net.IPAddr) (net.IP, error) {
 	isIPv6 := false
-	if t.Af == "ip6"{
+	if t.Af == "ip6" {
 		isIPv6 = true
 	}
 

@@ -3,6 +3,7 @@ package ztrace
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"net"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ type ServerRecord struct {
 	RecvCnt         uint64
 	Lock            *sync.Mutex
 	Rtt             float64
+	Loss            float64
 	LastTime        time.Duration
 	WrstTime        time.Duration
 	BestTime        time.Duration
@@ -90,13 +92,12 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	}
 	sendInfo := tsendInfo.(*SendMetric)
 	server := t.Metric[sendInfo.TTL]
-	//server := t.getServer(v.RespAddr, sendInfo.TTL, sendInfo.FlowKey, sendInfo.TimeStamp, v.TimeStamp)
-	//t.Metric[sendInfo.TTL][v.RespAddr] = append(t.Metric[sendInfo.TTL][v.RespAddr], server)
 	server.Lock.Lock()
 	server.Addr = v.RespAddr
 	server.RecvCnt++
 	server.Success = true
 	server.SuccSum = server.SuccSum + 1
+	server.Loss = float64(server.SuccSum*100) / float64(t.MaxPath)
 	latency := v.TimeStamp.Sub(sendInfo.TimeStamp)
 	server.LastTime = latency
 	if server.WrstTime == time.Duration(0) || latency > server.WrstTime {
@@ -109,8 +110,32 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	server.AvgTime = time.Duration((int64)(server.AllTime/time.Microsecond)/(server.SuccSum)) * time.Microsecond
 	server.Lock.Unlock()
 	if IsEqualIp(v.RespAddr, t.NetDstAddr.String()) {
-		t.EndPoint = uint8(v.ID)
-		atomic.StoreInt32(t.stopSignal, 1)
+		t.EndPoint = int64(math.Min(float64(v.ID), float64(t.EndPoint)))
+	}
+	return false
+}
+
+func (t *TraceRoute) IsFinish() bool {
+	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
+	tdb, ok := t.DB.Load(key)
+	if !ok {
+		return false
+	}
+	db := tdb.(*StatsDB)
+	cur := time.Now()
+	// 先判断是不是包全发完了
+	if atomic.LoadUint64(db.SendCnt) == uint64(int(t.MaxTTL)*t.MaxPath) {
+		for index, _ := range t.Metric {
+			if index == 0 {
+				continue
+			}
+			last := t.SendTimeMap[index]
+			// 如果距离最后一次发包大于超时时间
+			if cur.Sub(last).Seconds() > t.Timeout.Seconds() {
+				t.EndTime = cur
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -199,16 +224,16 @@ type HopData struct {
 func (t *TraceRoute) Statistics() {
 	var buffer bytes.Buffer
 	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", time.Now().Format("2006-01-02 15:04:05"), t.Dest))
-	buffer.WriteString(fmt.Sprintf("%-3v %-48v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
+	buffer.WriteString(fmt.Sprintf("%-3v %-40v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
 
-	for index, item := range t.Metric[0:t.EndPoint] {
+	for index, item := range t.Metric[0 : t.EndPoint+1] {
 		if index == 0 {
 			continue
 		}
 		if item.Success {
-			buffer.WriteString(fmt.Sprintf("%-3d %-48v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, item.Addr, 3.3, '%', t.MaxPath, Time2Float(item.LastTime), Time2Float(item.AvgTime), Time2Float(item.BestTime), Time2Float(item.WrstTime)))
+			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, item.Addr, item.Loss, '%', t.MaxPath, Time2Float(item.LastTime), Time2Float(item.AvgTime), Time2Float(item.BestTime), Time2Float(item.WrstTime)))
 		} else {
-			buffer.WriteString(fmt.Sprintf("%-3d %-48v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, "???", float32(100), '%', int(0), float32(0), float32(0), float32(0), float32(0)))
+			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, "???", float32(100), '%', int(0), float32(0), float32(0), float32(0), float32(0)))
 		}
 	}
 	t.HopStr = buffer.String()
