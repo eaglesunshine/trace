@@ -97,7 +97,7 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	server.RecvCnt++
 	server.Success = true
 	server.SuccSum = server.SuccSum + 1
-	server.Loss = float64(server.SuccSum*100) / float64(t.MaxPath)
+	server.Loss = 100 - float64(server.SuccSum*100)/float64(t.MaxPath)
 	latency := v.TimeStamp.Sub(sendInfo.TimeStamp)
 	server.LastTime = latency
 	if server.WrstTime == time.Duration(0) || latency > server.WrstTime {
