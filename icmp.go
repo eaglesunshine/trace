@@ -65,18 +65,18 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	}
 	defer conn.Close()
 	for {
-		conn.SetReadDeadline(time.Now().Add(t.Timeout))
+		//conn.SetReadDeadline(time.Now().Add(t.Timeout))
 		buf := make([]byte, 1500)
 		n, raddr, err := conn.ReadFrom(buf)
 		if err != nil {
-			break
+			continue
 		}
 		if n == 0 {
 			continue
 		}
 		x, err := icmp.ParseMessage(1, buf)
 		if err != nil {
-
+			continue
 		}
 		if typ, ok := x.Type.(ipv4.ICMPType); ok && typ.String() == "time exceeded" {
 			body := x.Body.(*icmp.TimeExceeded).Data
