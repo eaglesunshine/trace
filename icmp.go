@@ -51,6 +51,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			id = (id + 1) % mod
 			t.RecordSend(m)
 		}
+		time.Sleep(time.Second * 1)
 	}
 	t.StartTime = time.Now()
 	return nil
