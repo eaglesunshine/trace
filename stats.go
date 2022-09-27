@@ -138,6 +138,7 @@ func (t *TraceRoute) IsFinish() bool {
 				}
 			} else {
 				if cur.Sub(t.StartTime).Seconds() > 40 {
+					t.EndTime = cur
 					return true
 				}
 			}
