@@ -30,9 +30,8 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 		return err
 	}
 	defer rSocket.Close()
-
+	t.StartTime = time.Now()
 	mod := uint16(1 << 15)
-
 	for snt := 0; snt < t.MaxPath; snt++ {
 		id := uint16(1)
 		for ttl := 1; ttl <= int(t.MaxTTL); ttl++ {
@@ -53,7 +52,6 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 		}
 		time.Sleep(time.Second * 1)
 	}
-	t.StartTime = time.Now()
 	return nil
 }
 
