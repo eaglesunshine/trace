@@ -125,16 +125,23 @@ func (t *TraceRoute) IsFinish() bool {
 	cur := time.Now()
 	// 先判断是不是包全发完了
 	if atomic.LoadUint64(db.SendCnt) == uint64(int(t.MaxTTL)*t.MaxPath) {
-		for index, _ := range t.Metric {
+		for index, item := range t.Metric {
 			if index == 0 {
 				continue
 			}
-			last := t.SendTimeMap[index]
-			// 如果距离最后一次发包大于超时时间
-			if cur.Sub(last).Seconds() > t.Timeout.Seconds() {
-				t.EndTime = cur
-				return true
+			if IsEqualIp(item.Addr, t.NetDstAddr.String()) {
+				last := t.SendTimeMap[index]
+				// 如果距离最后一次发包大于超时时间
+				if cur.Sub(last).Seconds() > t.Timeout.Seconds() {
+					t.EndTime = cur
+					return true
+				}
+			} else {
+				if cur.Sub(t.StartTime).Seconds() > 5 {
+					break
+				}
 			}
+
 		}
 	}
 	return false
