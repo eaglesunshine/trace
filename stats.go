@@ -134,11 +134,13 @@ func (t *TraceRoute) IsFinish() bool {
 				// 如果距离最后一次发包大于超时时间
 				if cur.Sub(last).Seconds() > t.Timeout.Seconds() {
 					t.EndTime = cur
+					t.getLastHop()
 					return true
 				}
 			} else {
 				if cur.Sub(t.StartTime).Seconds() > 20 {
 					t.EndTime = cur
+					t.getLastHop()
 					return true
 				}
 			}
@@ -146,6 +148,15 @@ func (t *TraceRoute) IsFinish() bool {
 		}
 	}
 	return false
+}
+
+// 在结束前再次获取最后一跳，避免之前取的数据不准
+func (t *TraceRoute) getLastHop() {
+	for index, item := range t.Metric {
+		if IsEqualIp(item.Addr, t.NetDstAddr.String()) {
+			t.EndPoint = int64(index) + 1
+		}
+	}
 }
 
 // 判定ip相等
