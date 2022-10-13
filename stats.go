@@ -141,6 +141,7 @@ func (t *TraceRoute) IsFinish() bool {
 				if cur.Sub(t.StartTime).Seconds() > 20 {
 					t.EndTime = cur
 					t.getLastHop()
+					t.addLastHop()
 					return true
 				}
 			}
@@ -155,8 +156,37 @@ func (t *TraceRoute) getLastHop() {
 	for index, item := range t.Metric {
 		if IsEqualIp(item.Addr, t.NetDstAddr.String()) {
 			t.EndPoint = int64(index) + 1
+			break
 		}
 	}
+}
+
+func (t *TraceRoute) addLastHop() {
+	hopLen := len(t.Metric)
+	newMetric := make([]*ServerRecord, hopLen+1)
+	for _, item := range t.Metric {
+		newMetric = append(newMetric, item)
+	}
+	newMetric = append(newMetric, &ServerRecord{
+		TTL:             uint8(hopLen + 1),
+		Addr:            "???",
+		Name:            "",
+		Session:         "",
+		LatencyDescribe: nil,
+		Quantile:        nil,
+		RecvCnt:         0,
+		Lock:            nil,
+		Rtt:             0,
+		Loss:            100,
+		LastTime:        0,
+		WrstTime:        0,
+		BestTime:        0,
+		AvgTime:         0,
+		AllTime:         0,
+		SuccSum:         0,
+		Success:         true,
+	})
+	t.Metric = newMetric
 }
 
 // 判定ip相等
