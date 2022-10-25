@@ -140,8 +140,8 @@ func (t *TraceRoute) IsFinish() bool {
 			} else {
 				if cur.Sub(t.StartTime).Seconds() > 20 {
 					t.EndTime = cur
-					t.getLastHop()
-					t.addLastHop()
+					//t.getLastHop()
+					//t.addLastHop()
 					return true
 				}
 			}
@@ -154,8 +154,11 @@ func (t *TraceRoute) IsFinish() bool {
 // 在结束前再次获取最后一跳，避免之前取的数据不准
 func (t *TraceRoute) getLastHop() {
 	for index, item := range t.Metric {
+		if index == 0 {
+			continue
+		}
 		if IsEqualIp(item.Addr, t.NetDstAddr.String()) {
-			t.EndPoint = int64(index) + 1
+			t.EndPoint = int64(index)
 			break
 		}
 	}
@@ -275,7 +278,7 @@ func (t *TraceRoute) Statistics() {
 	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", time.Now().Format("2006-01-02 15:04:05"), t.Dest))
 	buffer.WriteString(fmt.Sprintf("%-3v %-40v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
 
-	for index, item := range t.Metric[0 : t.EndPoint+1] {
+	for index, item := range t.Metric[0:t.EndPoint] {
 		if index == 0 {
 			continue
 		}
