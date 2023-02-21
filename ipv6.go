@@ -57,7 +57,7 @@ func (t *TraceRoute) TraceIpv6ICMP() (err error) {
 			Hop: i,
 		}
 
-		for j := 0; j < t.MaxPath; j++ {
+		for j := 0; j < t.Count; j++ {
 
 			icmp6Echo.Body.(*icmp.Echo).Seq = i
 
@@ -114,7 +114,7 @@ func (t *TraceRoute) TraceIpv6ICMP() (err error) {
 					hopData.Details = append(hopData.Details, hop)
 
 					t.LastArrived += 1
-					if t.LastArrived == t.MaxPath {
+					if t.LastArrived == t.Count {
 						isDest = true
 						break
 					}

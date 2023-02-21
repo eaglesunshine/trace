@@ -97,7 +97,7 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	server.RecvCnt++
 	server.Success = true
 	server.SuccSum = int64(math.Min(float64(server.SuccSum+1), 10))
-	server.Loss = 100 - float64(server.SuccSum*100)/float64(t.MaxPath)
+	server.Loss = 100 - float64(server.SuccSum*100)/float64(t.Count)
 	latency := v.TimeStamp.Sub(sendInfo.TimeStamp)
 	server.LastTime = latency
 	if server.WrstTime == time.Duration(0) || latency > server.WrstTime {
@@ -109,9 +109,6 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 	server.AllTime += latency
 	server.AvgTime = time.Duration((int64)(server.AllTime/time.Microsecond)/(server.SuccSum)) * time.Microsecond
 	server.Lock.Unlock()
-	if IsEqualIp(v.RespAddr, t.NetDstAddr.String()) {
-		t.EndPoint = int64(math.Min(float64(v.ID), float64(t.EndPoint)))
-	}
 	return false
 }
 
@@ -124,91 +121,14 @@ func (t *TraceRoute) IsFinish() bool {
 	db := tdb.(*StatsDB)
 	cur := time.Now()
 	// 先判断是不是包全发完了
-	if atomic.LoadUint64(db.SendCnt) == uint64(int(t.MaxTTL)*t.MaxPath) {
-		for index, item := range t.Metric {
-			if index == 0 {
-				continue
-			}
-			if IsEqualIp(item.Addr, t.NetDstAddr.String()) {
-				last := t.SendTimeMap[index]
-				// 如果距离最后一次发包大于超时时间
-				if cur.Sub(last).Seconds() > t.Timeout.Seconds() {
-					t.EndTime = cur
-					t.getLastHop()
-					return true
-				}
-			} else {
-				if cur.Sub(t.StartTime).Seconds() > 8 {
-					t.EndTime = cur
-					//t.getLastHop()
-					//t.addLastHop()
-					return true
-				}
-			}
-
+	if atomic.LoadUint64(db.SendCnt) == uint64(t.MaxTTL*t.Count) {
+		fmt.Println(cur.Sub(t.StartTime).Seconds() - float64(t.Count)*(interval*time.Millisecond).Seconds())
+		if cur.Sub(t.StartTime).Seconds()-float64(t.Count)*(interval*time.Millisecond).Seconds() > t.Timeout.Seconds() {
+			// 如果所有包发完之后，过了超时时间，那也认为是完成
+			return true
 		}
 	}
 	return false
-}
-
-// 在结束前再次获取最后一跳，避免之前取的数据不准
-func (t *TraceRoute) getLastHop() {
-	for index, item := range t.Metric {
-		if index == 0 {
-			continue
-		}
-		if IsEqualIp(item.Addr, t.NetDstAddr.String()) {
-			t.EndPoint = int64(index)
-			break
-		}
-	}
-}
-
-func (t *TraceRoute) addLastHop() {
-	hopLen := len(t.Metric)
-	newMetric := make([]*ServerRecord, hopLen+1)
-	for _, item := range t.Metric {
-		newMetric = append(newMetric, item)
-	}
-	newMetric = append(newMetric, &ServerRecord{
-		TTL:             uint8(hopLen + 1),
-		Addr:            "???",
-		Name:            "",
-		Session:         "",
-		LatencyDescribe: nil,
-		Quantile:        nil,
-		RecvCnt:         0,
-		Lock:            nil,
-		Rtt:             0,
-		Loss:            100,
-		LastTime:        0,
-		WrstTime:        0,
-		BestTime:        0,
-		AvgTime:         0,
-		AllTime:         0,
-		SuccSum:         0,
-		Success:         true,
-	})
-	t.Metric = newMetric
-}
-
-// 判定ip相等
-func IsEqualIp(ips1, ips2 string) bool {
-	ip1 := net.ParseIP(ips1)
-	if ip1 == nil {
-		return false
-	}
-
-	ip2 := net.ParseIP(ips2)
-	if ip2 == nil {
-		return false
-	}
-
-	if ip1.String() != ip2.String() {
-		return false
-	}
-
-	return true
 }
 
 func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp,
@@ -227,17 +147,6 @@ func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp
 
 	return server
 }
-
-//func (t *TraceRoute) addLastHop(ttl uint8) {
-//	t.RecordLock.Lock()
-//	defer t.RecordLock.Unlock()
-//
-//	t.LastArrived += 1
-//	if t.LastArrived <= t.MaxPath {
-//		server := t.getServer(t.NetDstAddr.String(), ttl, "", t.StartTime, time.Now())
-//		t.Metric[ttl][t.NetDstAddr.String()] = append(t.Metric[ttl][t.NetDstAddr.String()], server)
-//	}
-//}
 
 type HopData struct {
 	Hop     int
@@ -278,12 +187,12 @@ func (t *TraceRoute) Statistics() {
 	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", time.Now().Format("2006-01-02 15:04:05"), t.Dest))
 	buffer.WriteString(fmt.Sprintf("%-3v %-40v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
 
-	for index, item := range t.Metric[0 : t.EndPoint+1] {
+	for index, item := range t.Metric[0 : t.LastHop+1] {
 		if index == 0 {
 			continue
 		}
 		if item.Success {
-			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, item.Addr, item.Loss, '%', t.MaxPath, Time2Float(item.LastTime), Time2Float(item.AvgTime), Time2Float(item.BestTime), Time2Float(item.WrstTime)))
+			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, item.Addr, item.Loss, '%', t.Count, Time2Float(item.LastTime), Time2Float(item.AvgTime), Time2Float(item.BestTime), Time2Float(item.WrstTime)))
 		} else {
 			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, "???", float32(100), '%', int(0), float32(0), float32(0), float32(0), float32(0)))
 		}

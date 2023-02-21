@@ -2,6 +2,7 @@ package ztrace
 
 import (
 	"fmt"
+	"golang.org/x/net/icmp"
 	"net"
 	"runtime"
 	"sync"
@@ -28,17 +29,18 @@ type RecvMetric struct {
 }
 
 type TraceRoute struct {
+	conn          *icmp.PacketConn
 	SrcAddr       string
 	Dest          string
 	TCPDPort      uint16
 	TCPProbePorts []uint16
-	MaxPath       int
-	MaxTTL        uint8
+	Count         int
+	MaxTTL        int
 	Protocol      string
 	PacketRate    float32
 	WideMode      bool
 	PortOffset    int32
-	EndPoint      int64
+	LastHop       int
 	SendTimeMap   map[int]time.Time
 
 	NetSrcAddr net.IP
@@ -131,7 +133,7 @@ func (t *TraceRoute) VerifyCfg() error {
 		return err
 	}
 
-	if t.MaxPath > 32 {
+	if t.Count > 32 {
 		logrus.Error("Only support max ECMP = 32")
 		return fmt.Errorf("Only support max ECMP = 32")
 	}
@@ -143,7 +145,7 @@ func (t *TraceRoute) VerifyCfg() error {
 	return nil
 }
 
-func New(protocol string, dest string, src string, af string, maxPath int64, maxTtl int64, timeout int64) (result *TraceRoute, err error) {
+func New(protocol string, dest string, src string, af string, count int, maxTtl int, timeout int64) (result *TraceRoute, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Error(e)
@@ -152,21 +154,25 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 			err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 		}
 	}()
-
+	conn, err := icmp.ListenPacket("udp4", "")
+	if err != nil {
+		return nil, err
+	}
 	result = &TraceRoute{
+		conn:          conn,
 		SrcAddr:       src,
 		Dest:          dest,
 		Af:            af,
 		TCPDPort:      443,
 		TCPProbePorts: []uint16{80, 8080, 443, 8443},
 		Protocol:      protocol,
-		MaxPath:       int(maxPath),
-		MaxTTL:        uint8(maxTtl),
+		Count:         count,
+		MaxTTL:        maxTtl,
 		PacketRate:    1,
 		WideMode:      true,
 		PortOffset:    0,
 		Timeout:       time.Duration(timeout) * time.Second,
-		EndPoint:      maxTtl,
+		LastHop:       0,
 		SendTimeMap:   make(map[int]time.Time, 0),
 	}
 
@@ -200,7 +206,7 @@ func New(protocol string, dest string, src string, af string, maxPath int64, max
 func (t *TraceRoute) TraceUDP() (err error) {
 	var handlers []func() error
 
-	for i := 0; i < t.MaxPath; i++ {
+	for i := 0; i < t.Count; i++ {
 		handlers = append(handlers, func() error {
 			return t.SendIPv4UDP()
 		})
@@ -216,7 +222,7 @@ func (t *TraceRoute) TraceUDP() (err error) {
 func (t *TraceRoute) TraceTCP() (err error) {
 	var handlers []func() error
 
-	for i := 0; i < t.MaxPath; i++ {
+	for i := 0; i < t.Count; i++ {
 		handlers = append(handlers, func() error {
 			return t.SendIPv4TCP()
 		})
