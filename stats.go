@@ -129,9 +129,14 @@ func (t *TraceRoute) IsFinish() bool {
 			return true
 		} else {
 			if cur.Sub(t.StartTime).Seconds() > 10 {
+				t.LastHop = -1
 				return true
 			}
 		}
+	}
+	if cur.Sub(t.StartTime).Seconds() > 10 {
+		t.LastHop = -999
+		return true
 	}
 	return false
 }
