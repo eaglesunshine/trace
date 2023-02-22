@@ -122,8 +122,9 @@ func (t *TraceRoute) IsFinish() bool {
 	cur := time.Now()
 	// 先判断是不是包全发完了
 	if atomic.LoadUint64(db.SendCnt) == uint64(t.MaxTTL*t.Count) {
-		fmt.Println(cur.Sub(t.StartTime).Seconds() - float64(t.Count)*(interval*time.Millisecond).Seconds())
 		if cur.Sub(t.StartTime).Seconds()-float64(t.Count)*(interval*time.Millisecond).Seconds() > t.Timeout.Seconds() {
+			fmt.Println(cur.Sub(t.StartTime).Seconds() - float64(t.Count)*(interval*time.Millisecond).Seconds())
+			fmt.Println("已完成")
 			// 如果所有包发完之后，过了超时时间，那也认为是完成
 			return true
 		}

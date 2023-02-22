@@ -156,7 +156,7 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 	}()
 	conn, err := icmp.ListenPacket("udp4", "")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("建立udp4 socket失败，%s", err)
 	}
 	result = &TraceRoute{
 		conn:          conn,
