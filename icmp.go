@@ -28,6 +28,10 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
+	conn, err := icmp.ListenPacket("udp4", "")
+	if err != nil {
+		return fmt.Errorf("建立udp4 socket失败，%s", err)
+	}
 	ipaddr, err := net.ResolveIPAddr("ip4", t.NetDstAddr.String())
 	if err != nil {
 		return err
@@ -60,8 +64,8 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return err
 			}
-			t.conn.IPv4PacketConn().SetTTL(ttl)
-			t.conn.WriteTo(msgBytes, addr)
+			conn.IPv4PacketConn().SetTTL(ttl)
+			conn.WriteTo(msgBytes, addr)
 			m := &SendMetric{
 				FlowKey:   key,
 				ID:        uint32(id),
@@ -79,15 +83,19 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 }
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
+	conn, err := icmp.ListenPacket("udp4", "")
+	if err != nil {
+		return fmt.Errorf("建立udp4 socket失败，%s", err)
+	}
 	expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	delay := expBackoff.Get()
 	for {
 		// 包+头
 		buf := make([]byte, packageSize+8)
-		if err := t.conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
 			return err
 		}
-		n, _, src, err := t.conn.IPv4PacketConn().ReadFrom(buf)
+		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
