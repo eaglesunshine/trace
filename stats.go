@@ -128,7 +128,9 @@ func (t *TraceRoute) IsFinish() bool {
 			// 如果所有包发完之后，过了超时时间，那也认为是完成
 			return true
 		} else {
-
+			if cur.Sub(t.StartTime).Seconds() > 10 {
+				return true
+			}
 		}
 	}
 	return false
