@@ -128,15 +128,8 @@ func (t *TraceRoute) IsFinish() bool {
 	// 先判断是不是包全发完了
 	if atomic.LoadUint64(db.SendCnt) == uint64(t.MaxTTL*t.Count) {
 		if cur.Sub(t.StartTime).Seconds()-float64(t.Count)*(interval*time.Millisecond).Seconds() > t.Timeout.Seconds() {
-			fmt.Println(cur.Sub(t.StartTime).Seconds() - float64(t.Count)*(interval*time.Millisecond).Seconds())
-			fmt.Println("已完成")
 			// 如果所有包发完之后，过了超时时间，那也认为是完成
 			return true
-		} else {
-			if cur.Sub(t.StartTime).Seconds() > 10 {
-				t.LastHop = -1
-				return true
-			}
 		}
 	}
 	return false
@@ -198,6 +191,10 @@ func (t *TraceRoute) Statistics() {
 	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", time.Now().Format("2006-01-02 15:04:05"), t.Dest))
 	buffer.WriteString(fmt.Sprintf("%-3v %-40v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
 
+	if t.LastHop < 0 {
+		t.HopStr = ""
+		return
+	}
 	for index, item := range t.Metric[0 : t.LastHop+1] {
 		if index == 0 {
 			continue
