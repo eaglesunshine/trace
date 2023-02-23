@@ -109,7 +109,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		//if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
 		//	return err
 		//}
-		n, _, src, _ := conn.IPv4PacketConn().ReadFrom(buf)
+		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		//if err != nil {
 		//	if neterr, ok := err.(*net.OpError); ok {
 		//		if neterr.Timeout() {
@@ -126,11 +126,11 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		//if err != nil {
 		//	continue
 		//}
+		if err != nil {
+			return err
+		}
 		if time.Now().After(t.GlobalTimeout) {
 			return fmt.Errorf("超时")
-		}
-		if n == 0 {
-			continue
 		}
 		// 结果如8.8.8.8:0
 		respAddr := src.String()
