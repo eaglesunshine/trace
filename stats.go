@@ -121,12 +121,14 @@ func (t *TraceRoute) IsFinish() bool {
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	tdb, ok := t.DB.Load(key)
 	if !ok {
+		fmt.Println("t.DB.Load(key)")
 		return false
 	}
 	db := tdb.(*StatsDB)
 	cur := time.Now()
 	// 先判断是不是包全发完了
 	if atomic.LoadUint64(db.SendCnt) == uint64(t.MaxTTL*t.Count) {
+		fmt.Println("发完了")
 		if cur.Sub(t.StartTime).Seconds()-float64(t.Count)*(interval*time.Millisecond).Seconds() > t.Timeout.Seconds() {
 			// 如果所有包发完之后，过了超时时间，那也认为是完成
 			return true
