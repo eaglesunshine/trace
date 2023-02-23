@@ -94,8 +94,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	}
 	expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	delay := expBackoff.Get()
-	nowtime := time.Now()
-	deadline := nowtime.Add(time.Second * 20)
 	for {
 		// 包+头
 		buf := make([]byte, packageSize+8)
@@ -106,7 +104,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
-					if time.Now().After(deadline) {
+					if time.Now().After(t.GlobalTimeout) {
 						return err
 					}
 					// Read timeout

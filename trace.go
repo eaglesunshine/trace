@@ -58,14 +58,15 @@ type TraceRoute struct {
 	Longitude  float64
 	Lock       *sync.RWMutex
 
-	Timeout     time.Duration
-	LastArrived int
-	Hops        []HopData
-	StartTime   time.Time
-	EndTime     time.Time
-	RecordLock  sync.Mutex
-	SendMap     map[string]*SendMetric
-	HopStr      string
+	Timeout       time.Duration
+	LastArrived   int
+	Hops          []HopData
+	StartTime     time.Time
+	EndTime       time.Time
+	RecordLock    sync.Mutex
+	SendMap       map[string]*SendMetric
+	HopStr        string
+	GlobalTimeout time.Time
 }
 type StatsDB struct {
 	Cache   *tsyncmap.Map
@@ -167,6 +168,7 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		Timeout:       time.Duration(timeout) * time.Second,
 		LastHop:       0,
 		SendTimeMap:   make(map[int]time.Time, 0),
+		GlobalTimeout: time.Now().Add(20 * time.Second),
 	}
 
 	if err := result.VerifyCfg(); err != nil {

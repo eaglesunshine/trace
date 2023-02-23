@@ -23,7 +23,7 @@ func TestTrace(t *testing.T) {
 		"Dest":       c.Dest,
 		"NetDstAddr": c.NetDstAddr.String(),
 		"Protocol":   c.Protocol,
-		"MaxPath":    c.MaxPath,
+		"MaxPath":    c.Count,
 		"MaxTTL":     c.MaxTTL,
 		"Timeout":    fmt.Sprintf("%s", c.Timeout),
 		"Hops":       c.Hops,

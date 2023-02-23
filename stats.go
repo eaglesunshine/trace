@@ -113,6 +113,11 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 }
 
 func (t *TraceRoute) IsFinish() bool {
+	// 全局超时
+	if time.Now().After(t.GlobalTimeout) {
+		t.LastHop = -999
+		return true
+	}
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	tdb, ok := t.DB.Load(key)
 	if !ok {
@@ -133,10 +138,6 @@ func (t *TraceRoute) IsFinish() bool {
 				return true
 			}
 		}
-	}
-	if cur.Sub(t.StartTime).Seconds() > 10 {
-		t.LastHop = -999
-		return true
 	}
 	return false
 }
