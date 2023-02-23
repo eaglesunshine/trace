@@ -102,7 +102,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
 			return err
 		}
-		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
@@ -122,9 +122,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if len(splitSrc) == 2 {
 			respAddr = splitSrc[0]
 		}
-		//if n == 0 {
-		//	continue
-		//}
+		if n == 0 {
+			return fmt.Errorf("conn.IPv4PacketConn().ReadFrom() 读取数据为0")
+		}
 		x, err := icmp.ParseMessage(protocolICMP, buf)
 		if err != nil {
 			return fmt.Errorf("error parsing icmp message: %w", err)
