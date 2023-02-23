@@ -135,8 +135,11 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			switch pkt := x.Body.(type) {
 			case *icmp.TimeExceeded:
 				// 设置ttl后，一定会返回这个超时内容，头部长度是20，因此从20之后开始解析
-				e, _ := icmp.ParseMessage(protocolICMP, pkt.Data[20:])
-				switch p := e.Body.(type) {
+				m, err := icmp.ParseMessage(protocolICMP, pkt.Data[20:])
+				if err != nil {
+					return err
+				}
+				switch p := m.Body.(type) {
 				case *icmp.Echo:
 					m := &RecvMetric{
 						FlowKey:   key,
