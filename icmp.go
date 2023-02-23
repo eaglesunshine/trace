@@ -130,6 +130,10 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			return err
 		}
 		if time.Now().After(t.GlobalTimeout) {
+			if t.IsFinish() {
+				t.Statistics()
+				break
+			}
 			return fmt.Errorf("超时")
 		}
 		// 结果如8.8.8.8:0
