@@ -2,6 +2,8 @@ package ztrace
 
 import (
 	"fmt"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 	"net"
 	"runtime"
 	"sync"
@@ -28,6 +30,7 @@ type RecvMetric struct {
 }
 
 type TraceRoute struct {
+	conn          *icmp.PacketConn
 	SrcAddr       string
 	Dest          string
 	TCPDPort      uint16
@@ -153,7 +156,16 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 			err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 		}
 	}()
+	conn, err := icmp.ListenPacket("udp4", "")
+	if err != nil {
+		return nil, fmt.Errorf("建立udp4 socket失败，%s", err)
+	}
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return nil, fmt.Errorf("SetControlMessage()，%s", err)
+	}
 	result = &TraceRoute{
+		conn:          conn,
 		SrcAddr:       src,
 		Dest:          dest,
 		Af:            af,
