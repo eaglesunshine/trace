@@ -156,16 +156,7 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 			err = fmt.Errorf("panic recovered: %s\n %s", e, buf)
 		}
 	}()
-	conn, err := icmp.ListenPacket("udp4", "")
-	if err != nil {
-		return nil, fmt.Errorf("建立udp4 socket失败，%s", err)
-	}
-	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	if err != nil {
-		return nil, fmt.Errorf("SetControlMessage()，%s", err)
-	}
 	result = &TraceRoute{
-		conn:          conn,
 		SrcAddr:       src,
 		Dest:          dest,
 		Af:            af,
@@ -187,6 +178,16 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		logrus.Error("VerifyCfg failed: ", err)
 		return nil, err
 	}
+	conn, err := icmp.ListenPacket("udp4", result.NetSrcAddr.String())
+	if err != nil {
+		return nil, err
+	}
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return nil, fmt.Errorf("SetControlMessage()，%s", err)
+	}
+	result.conn = conn
+
 	result.Lock = &sync.RWMutex{}
 	result.Metric = make([]*ServerRecord, int(maxTtl)+1)
 	for i := 1; i <= int(maxTtl); i++ {
