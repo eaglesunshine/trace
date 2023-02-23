@@ -3,7 +3,6 @@ package ztrace
 import (
 	"fmt"
 	"golang.org/x/net/icmp"
-	"golang.org/x/net/ipv4"
 	"net"
 	"runtime"
 	"sync"
@@ -178,15 +177,15 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		logrus.Error("VerifyCfg failed: ", err)
 		return nil, err
 	}
-	conn, err := icmp.ListenPacket("udp4", result.NetSrcAddr.String())
-	if err != nil {
-		return nil, err
-	}
-	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	if err != nil {
-		return nil, fmt.Errorf("SetControlMessage()，%s", err)
-	}
-	result.conn = conn
+	//conn, err := icmp.ListenPacket("udp4", result.NetSrcAddr.String())
+	//if err != nil {
+	//	return nil, err
+	//}
+	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	//if err != nil {
+	//	return nil, fmt.Errorf("SetControlMessage()，%s", err)
+	//}
+	//result.conn = conn
 
 	result.Lock = &sync.RWMutex{}
 	result.Metric = make([]*ServerRecord, int(maxTtl)+1)
