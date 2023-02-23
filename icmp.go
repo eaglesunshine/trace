@@ -21,21 +21,21 @@ const (
 	interval         = 100
 )
 
-func (t *TraceRoute) SendIPv4ICMP(conn *icmp.PacketConn) error {
+func (t *TraceRoute) SendIPv4ICMP() error {
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	db := NewStatsDB(key)
 
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
-	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	//if err != nil {
-	//	return err
-	//}
-	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	//if err != nil {
-	//	return fmt.Errorf("SetControlMessage()，%s", err)
-	//}
+	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	if err != nil {
+		return err
+	}
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return fmt.Errorf("SetControlMessage()，%s", err)
+	}
 
 	ipaddr, err := net.ResolveIPAddr("ip4", t.NetDstAddr.String())
 	if err != nil {
@@ -92,45 +92,48 @@ func (t *TraceRoute) SendIPv4ICMP(conn *icmp.PacketConn) error {
 	return nil
 }
 
-func (t *TraceRoute) ListenIPv4ICMP(conn *icmp.PacketConn) error {
-	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	//if err != nil {
-	//	return err
-	//}
-	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	//if err != nil {
-	//	return fmt.Errorf("SetControlMessage()，%s", err)
-	//}
-	expBackoff := newExpBackoff(50*time.Microsecond, 11)
-	delay := expBackoff.Get()
+func (t *TraceRoute) ListenIPv4ICMP() error {
+	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	if err != nil {
+		return err
+	}
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return fmt.Errorf("SetControlMessage()，%s", err)
+	}
+	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
+	//delay := expBackoff.Get()
 	for {
 		// 包+头
 		buf := make([]byte, packageSize+8)
-		if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
-			return err
-		}
+		//if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
+		//	return err
+		//}
 		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		//if err != nil {
+		//	if neterr, ok := err.(*net.OpError); ok {
+		//		if neterr.Timeout() {
+		//			if time.Now().After(t.GlobalTimeout) {
+		//				return fmt.Errorf("conn.IPv4PacketConn().ReadFrom() 读取超时，%s", err)
+		//			}
+		//			// Read timeout
+		//			delay = expBackoff.Get()
+		//			continue
+		//		}
+		//	}
+		//	return err
+		//}
 		if err != nil {
-			if neterr, ok := err.(*net.OpError); ok {
-				if neterr.Timeout() {
-					if time.Now().After(t.GlobalTimeout) {
-						return fmt.Errorf("conn.IPv4PacketConn().ReadFrom() 读取超时，%s", err)
-					}
-					// Read timeout
-					delay = expBackoff.Get()
-					continue
-				}
-			}
-			return err
+			continue
+		}
+		if n == 0 {
+			continue
 		}
 		// 结果如8.8.8.8:0
 		respAddr := src.String()
 		splitSrc := strings.Split(respAddr, ":")
 		if len(splitSrc) == 2 {
 			respAddr = splitSrc[0]
-		}
-		if n == 0 {
-			return fmt.Errorf("conn.IPv4PacketConn().ReadFrom() 读取数据为0")
 		}
 		x, err := icmp.ParseMessage(protocolICMP, buf)
 		if err != nil {

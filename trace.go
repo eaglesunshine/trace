@@ -2,8 +2,6 @@ package ztrace
 
 import (
 	"fmt"
-	"golang.org/x/net/icmp"
-	"golang.org/x/net/ipv4"
 	"net"
 	"runtime"
 	"sync"
@@ -211,7 +209,7 @@ func (t *TraceRoute) TraceUDP() (err error) {
 	}
 
 	handlers = append(handlers, func() error {
-		return t.ListenIPv4ICMP(nil)
+		return t.ListenIPv4ICMP()
 	})
 
 	return GoroutineNotPanic(handlers...)
@@ -227,20 +225,20 @@ func (t *TraceRoute) TraceTCP() (err error) {
 	}
 
 	handlers = append(handlers, func() error {
-		return t.ListenIPv4ICMP(nil)
+		return t.ListenIPv4ICMP()
 	})
 
 	return GoroutineNotPanic(handlers...)
 }
 
-func (t *TraceRoute) TraceICMP(conn *icmp.PacketConn) (err error) {
+func (t *TraceRoute) TraceICMP() (err error) {
 	var handlers []func() error
 
 	handlers = append(handlers, func() error {
-		return t.SendIPv4ICMP(conn)
+		return t.SendIPv4ICMP()
 	})
 	handlers = append(handlers, func() error {
-		return t.ListenIPv4ICMP(conn)
+		return t.ListenIPv4ICMP()
 	})
 
 	return GoroutineNotPanic(handlers...)
@@ -257,16 +255,7 @@ func (t *TraceRoute) Run() error {
 	case "udp":
 		return t.TraceUDP()
 	case "icmp":
-		conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-		if err != nil {
-			return err
-		}
-		err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-		if err != nil {
-			return fmt.Errorf("SetControlMessage()，%s", err)
-		}
-
-		return t.TraceICMP(conn)
+		return t.TraceICMP()
 
 	default:
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")
