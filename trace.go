@@ -3,6 +3,7 @@ package ztrace
 import (
 	"fmt"
 	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 	"net"
 	"runtime"
 	"sync"
@@ -29,7 +30,6 @@ type RecvMetric struct {
 }
 
 type TraceRoute struct {
-	conn          *icmp.PacketConn
 	SrcAddr       string
 	Dest          string
 	TCPDPort      uint16
@@ -177,15 +177,6 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		logrus.Error("VerifyCfg failed: ", err)
 		return nil, err
 	}
-	//conn, err := icmp.ListenPacket("udp4", result.NetSrcAddr.String())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	//if err != nil {
-	//	return nil, fmt.Errorf("SetControlMessage()，%s", err)
-	//}
-	//result.conn = conn
 
 	result.Lock = &sync.RWMutex{}
 	result.Metric = make([]*ServerRecord, int(maxTtl)+1)
@@ -220,7 +211,7 @@ func (t *TraceRoute) TraceUDP() (err error) {
 	}
 
 	handlers = append(handlers, func() error {
-		return t.ListenIPv4ICMP()
+		return t.ListenIPv4ICMP(nil)
 	})
 
 	return GoroutineNotPanic(handlers...)
@@ -236,25 +227,20 @@ func (t *TraceRoute) TraceTCP() (err error) {
 	}
 
 	handlers = append(handlers, func() error {
-		return t.ListenIPv4ICMP()
+		return t.ListenIPv4ICMP(nil)
 	})
 
 	return GoroutineNotPanic(handlers...)
 }
 
-func (t *TraceRoute) TraceICMP() (err error) {
+func (t *TraceRoute) TraceICMP(conn *icmp.PacketConn) (err error) {
 	var handlers []func() error
 
-	//for i := 0; i < t.MaxPath; i++ {
-	//	handlers = append(handlers, func() error {
-	//		return t.SendIPv4ICMP()
-	//	})
-	//}
 	handlers = append(handlers, func() error {
-		return t.SendIPv4ICMP()
+		return t.SendIPv4ICMP(conn)
 	})
 	handlers = append(handlers, func() error {
-		return t.ListenIPv4ICMP()
+		return t.ListenIPv4ICMP(conn)
 	})
 
 	return GoroutineNotPanic(handlers...)
@@ -271,7 +257,16 @@ func (t *TraceRoute) Run() error {
 	case "udp":
 		return t.TraceUDP()
 	case "icmp":
-		return t.TraceICMP()
+		conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+		if err != nil {
+			return err
+		}
+		err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+		if err != nil {
+			return fmt.Errorf("SetControlMessage()，%s", err)
+		}
+
+		return t.TraceICMP(conn)
 
 	default:
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")

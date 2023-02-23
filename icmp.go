@@ -21,21 +21,21 @@ const (
 	interval         = 100
 )
 
-func (t *TraceRoute) SendIPv4ICMP() error {
+func (t *TraceRoute) SendIPv4ICMP(conn *icmp.PacketConn) error {
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	db := NewStatsDB(key)
 
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
-	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	if err != nil {
-		return err
-	}
-	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	if err != nil {
-		return fmt.Errorf("SetControlMessage()，%s", err)
-	}
+	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	//if err != nil {
+	//	return err
+	//}
+	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	//if err != nil {
+	//	return fmt.Errorf("SetControlMessage()，%s", err)
+	//}
 
 	ipaddr, err := net.ResolveIPAddr("ip4", t.NetDstAddr.String())
 	if err != nil {
@@ -92,15 +92,15 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	return nil
 }
 
-func (t *TraceRoute) ListenIPv4ICMP() error {
-	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	if err != nil {
-		return err
-	}
-	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	if err != nil {
-		return fmt.Errorf("SetControlMessage()，%s", err)
-	}
+func (t *TraceRoute) ListenIPv4ICMP(conn *icmp.PacketConn) error {
+	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	//if err != nil {
+	//	return err
+	//}
+	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	//if err != nil {
+	//	return fmt.Errorf("SetControlMessage()，%s", err)
+	//}
 	expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	delay := expBackoff.Get()
 	for {
