@@ -64,8 +64,13 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return err
 			}
-			conn.IPv4PacketConn().SetTTL(ttl)
-			conn.WriteTo(msgBytes, addr)
+			if err = conn.IPv4PacketConn().SetTTL(ttl); err != nil {
+				return err
+			}
+			_, err = conn.WriteTo(msgBytes, addr)
+			if err != nil {
+				return err
+			}
 			m := &SendMetric{
 				FlowKey:   key,
 				ID:        uint32(id),
