@@ -65,11 +65,11 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 				return err
 			}
 			if err = conn.IPv4PacketConn().SetTTL(ttl); err != nil {
-				return err
+				return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 			}
 			_, err = conn.WriteTo(msgBytes, addr)
 			if err != nil {
-				return err
+				return fmt.Errorf("conn.WriteTo()失败，%s", err)
 			}
 			m := &SendMetric{
 				FlowKey:   key,
@@ -105,7 +105,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
 					if time.Now().After(t.GlobalTimeout) {
-						return err
+						return fmt.Errorf("conn.IPv4PacketConn().ReadFrom() 读取超时，%s", err)
 					}
 					// Read timeout
 					delay = expBackoff.Get()
