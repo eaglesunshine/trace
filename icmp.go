@@ -113,7 +113,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		//if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
 		//	return err
 		//}
+		fmt.Println("test1")
 		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		fmt.Println("test2")
 		//if err != nil {
 		//	if neterr, ok := err.(*net.OpError); ok {
 		//		if neterr.Timeout() {
