@@ -104,45 +104,30 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	//delay := expBackoff.Get()
 	for {
-		if t.IsFinish() {
-			t.Statistics()
-			break
-		}
 		// 包+头
 		buf := make([]byte, 1500)
-		//if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
-		//	return err
-		//}
-		fmt.Println("test1")
-		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		fmt.Println("test2")
-		//if err != nil {
-		//	if neterr, ok := err.(*net.OpError); ok {
-		//		if neterr.Timeout() {
-		//			if time.Now().After(t.GlobalTimeout) {
-		//				return fmt.Errorf("conn.IPv4PacketConn().ReadFrom() 读取超时，%s", err)
-		//			}
-		//			// Read timeout
-		//			delay = expBackoff.Get()
-		//			continue
-		//		}
-		//	}
-		//	return err
-		//}
-		//if err != nil {
-		//	continue
-		//}
-		if err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
 			return err
 		}
-		if time.Now().After(t.GlobalTimeout) {
-			fmt.Println("超时了超时了")
-			if t.IsFinish() {
-				t.Statistics()
-				break
+		fmt.Println("test1")
+		// tmd，在ios上这个ReadFrom会阻塞读，在ios模拟器上就没事
+		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		fmt.Println("test2")
+		if err != nil {
+			if neterr, ok := err.(*net.OpError); ok {
+				if neterr.Timeout() {
+					if t.IsFinish() {
+						t.Statistics()
+						break
+					}
+					// Read timeout
+					//delay = expBackoff.Get()
+					continue
+				}
 			}
-			return fmt.Errorf("超时")
+			return err
 		}
+		fmt.Println(n)
 		// 结果如8.8.8.8:0
 		respAddr := src.String()
 		splitSrc := strings.Split(respAddr, ":")
