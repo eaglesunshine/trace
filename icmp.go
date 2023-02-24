@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/ipv6"
 	"math/rand"
 	"net"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -104,6 +105,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	//delay := expBackoff.Get()
 	for {
+		fmt.Println(runtime.GOOS)
 		// 包+头
 		buf := make([]byte, 1500)
 		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
