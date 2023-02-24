@@ -104,6 +104,10 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	//delay := expBackoff.Get()
 	for {
+		if t.IsFinish() {
+			t.Statistics()
+			break
+		}
 		// 包+头
 		buf := make([]byte, 1500)
 		//if err := conn.SetReadDeadline(time.Now().Add(delay)); err != nil {
@@ -143,6 +147,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if len(splitSrc) == 2 {
 			respAddr = splitSrc[0]
 		}
+		fmt.Println(src.String())
 		x, err := icmp.ParseMessage(protocolICMP, buf)
 		if err != nil {
 			return fmt.Errorf("error parsing icmp message: %w", err)
@@ -198,10 +203,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			default:
 				return fmt.Errorf("invalid ICMP echo reply; type: '%T', '%v'", pkt, pkt)
 			}
-		}
-		if t.IsFinish() {
-			t.Statistics()
-			break
 		}
 	}
 	return nil
