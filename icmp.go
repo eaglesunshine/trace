@@ -111,10 +111,8 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
 			return err
 		}
-		fmt.Println("test1")
 		// tmd，在ios上这个ReadFrom会阻塞读，在ios模拟器上就没事
-		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		fmt.Println("test2")
+		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
@@ -129,14 +127,12 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			}
 			return err
 		}
-		fmt.Println(n)
 		// 结果如8.8.8.8:0
 		respAddr := src.String()
 		splitSrc := strings.Split(respAddr, ":")
 		if len(splitSrc) == 2 {
 			respAddr = splitSrc[0]
 		}
-		fmt.Println(src.String())
 		x, err := icmp.ParseMessage(protocolICMP, buf)
 		if err != nil {
 			return fmt.Errorf("error parsing icmp message: %w", err)
