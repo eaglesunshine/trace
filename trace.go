@@ -66,6 +66,7 @@ type TraceRoute struct {
 	RecordLock    sync.Mutex
 	SendMap       map[string]*SendMetric
 	HopStr        string
+	HopDetail     []HopInfo
 	GlobalTimeout time.Time
 }
 type StatsDB struct {
@@ -169,6 +170,7 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		LastHop:       0,
 		SendTimeMap:   make(map[int]time.Time, 0),
 		GlobalTimeout: time.Now().Add(20 * time.Second),
+		HopDetail:     make([]HopInfo, 0),
 	}
 
 	if err := result.VerifyCfg(); err != nil {

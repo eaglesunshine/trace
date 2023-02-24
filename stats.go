@@ -122,16 +122,12 @@ func (t *TraceRoute) IsFinish() bool {
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	tdb, ok := t.DB.Load(key)
 	if !ok {
-		fmt.Println("t.DB.Load(key)")
 		return false
 	}
 	db := tdb.(*StatsDB)
 	cur := time.Now()
 	// 先判断是不是包全发完了
 	if atomic.LoadUint64(db.SendCnt) == uint64(t.MaxTTL*t.Count) {
-		fmt.Println("发完了")
-		fmt.Println(fmt.Sprintf("间隔时间：%f", cur.Sub(t.StartTime).Seconds()-float64(t.Count)*(interval*time.Millisecond).Seconds()))
-		fmt.Println(fmt.Sprintf("超时时间：%f", t.Timeout.Seconds()))
 		if cur.Sub(t.StartTime).Seconds()-float64(t.Count)*(interval*time.Millisecond).Seconds() > t.Timeout.Seconds() {
 			fmt.Println("完成了完成了")
 			// 如果所有包发完之后，过了超时时间，那也认为是完成
@@ -161,6 +157,17 @@ func (t *TraceRoute) getServer(addr string, ttl uint8, key string, sendTimeStamp
 type HopData struct {
 	Hop     int
 	Details []map[string]interface{}
+}
+
+type HopInfo struct {
+	Index int
+	Host  string
+	Loss  float64
+	Snt   int
+	Last  float64
+	Avg   float64
+	Best  float64
+	Wrst  float64
 }
 
 //func (t *TraceRoute) GetHopData(id int) (hopData HopData, isDest bool) {
@@ -201,17 +208,40 @@ func (t *TraceRoute) Statistics() {
 		t.HopStr = ""
 		return
 	}
+	hops := make([]HopInfo, 0)
 	for index, item := range t.Metric[0 : t.LastHop+1] {
 		if index == 0 {
 			continue
 		}
+
 		if item.Success {
+			hops = append(hops, HopInfo{
+				Index: index,
+				Host:  item.Addr,
+				Loss:  item.Loss,
+				Snt:   t.Count,
+				Last:  Time2Float(item.LastTime),
+				Avg:   Time2Float(item.AvgTime),
+				Best:  Time2Float(item.BestTime),
+				Wrst:  Time2Float(item.WrstTime),
+			})
 			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, item.Addr, item.Loss, '%', t.Count, Time2Float(item.LastTime), Time2Float(item.AvgTime), Time2Float(item.BestTime), Time2Float(item.WrstTime)))
 		} else {
+			hops = append(hops, HopInfo{
+				Index: index,
+				Host:  "???",
+				Loss:  100,
+				Snt:   t.Count,
+				Last:  0,
+				Avg:   0,
+				Best:  0,
+				Wrst:  0,
+			})
 			buffer.WriteString(fmt.Sprintf("%-3d %-40v  %10.1f%c  %10v  %10.2f  %10.2f  %10.2f  %10.2f\n", item.TTL, "???", float32(100), '%', int(0), float32(0), float32(0), float32(0), float32(0)))
 		}
 	}
 	t.HopStr = buffer.String()
+	t.HopDetail = hops
 	//合并最后一跳的数据
 	//minTtl := t.MaxTTL
 	//for ttl, _ := range t.LastMetric {
@@ -231,6 +261,6 @@ func (t *TraceRoute) Statistics() {
 	//}
 }
 
-func Time2Float(t time.Duration) float32 {
-	return (float32)(t/time.Microsecond) / float32(1000)
+func Time2Float(t time.Duration) float64 {
+	return (float64)(t/time.Microsecond) / float64(1000)
 }
