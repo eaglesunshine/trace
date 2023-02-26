@@ -17,7 +17,7 @@ import (
 const (
 	protocolICMP     = 1
 	protocolIPv6ICMP = 58
-	packageSize      = 32
+	packageSize      = 64
 	interval         = 100
 )
 
@@ -53,8 +53,8 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if snt == t.Count-1 {
 				t.SendTimeMap[ttl] = time.Now()
 			}
-			data := make([]byte, 32)
-			data = append(data, bytes.Repeat([]byte{1}, 32)...)
+			data := make([]byte, packageSize)
+			data = append(data, bytes.Repeat([]byte{1}, packageSize)...)
 			body := &icmp.Echo{
 				ID:   int(id),
 				Seq:  int(id),
@@ -105,11 +105,12 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	//delay := expBackoff.Get()
 	for {
 		// 包+头
-		buf := make([]byte, 1500)
+		buf := make([]byte, packageSize+8)
 		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 900)); err != nil {
 			return err
 		}
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
+		// md，怎么在android又是另一个情况啊啊啊啊啊
 		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
