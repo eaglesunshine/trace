@@ -235,7 +235,10 @@ func (t *TraceRoute) TraceTCP() (err error) {
 
 func (t *TraceRoute) TraceICMP() (err error) {
 	var handlers []func() error
-
+	_, err = net.ListenPacket("ip4:icmp", t.NetSrcAddr.String())
+	if err != nil {
+		return err
+	}
 	handlers = append(handlers, func() error {
 		return t.SendIPv4ICMP()
 	})
