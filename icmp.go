@@ -114,6 +114,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
+					fmt.Println("read超时了")
 					if t.IsFinish() {
 						t.Statistics()
 						break
