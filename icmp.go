@@ -76,6 +76,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return fmt.Errorf("conn.WriteTo()失败，%s", err)
 			}
+			fmt.Println(fmt.Sprintf("发包：%d", snt))
 			m := &SendMetric{
 				FlowKey:   key,
 				ID:        uint32(id),
@@ -97,24 +98,26 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	if err != nil {
 		return err
 	}
-	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	if err != nil {
-		return fmt.Errorf("SetControlMessage()，%s", err)
-	}
+	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	//if err != nil {
+	//	return fmt.Errorf("SetControlMessage()，%s", err)
+	//}
 	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	//delay := expBackoff.Get()
 	for {
 		// 包+头
 		buf := make([]byte, packageSize+8)
-		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 900)); err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
 			return err
 		}
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况啊啊啊啊啊
-		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
+					fmt.Println(n)
+					fmt.Println(src.String())
 					fmt.Println("read超时了")
 					if t.IsFinish() {
 						t.Statistics()
