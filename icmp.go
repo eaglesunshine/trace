@@ -111,6 +111,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		}
 		// tmd，在ios上这个ReadFrom会阻塞读，在ios模拟器上就没事
 		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		fmt.Println(src.String())
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
@@ -126,7 +127,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			}
 			return err
 		}
-		fmt.Println(src.String())
 		// 结果如8.8.8.8:0
 		respAddr := src.String()
 		splitSrc := strings.Split(respAddr, ":")
