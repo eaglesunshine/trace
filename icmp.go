@@ -106,26 +106,24 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	for {
 		// 包+头
 		buf := make([]byte, 1500)
-		//if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
-		//	return err
-		//}
+		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 900)); err != nil {
+			return err
+		}
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
-		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		fmt.Println(n)
-		fmt.Println(src.String())
+		_, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
-			//if neterr, ok := err.(*net.OpError); ok {
-			//	if neterr.Timeout() {
-			//		fmt.Println("read超时了")
-			//		if t.IsFinish() {
-			//			t.Statistics()
-			//			break
-			//		}
-			//		// Read timeout
-			//		//delay = expBackoff.Get()
-			//		continue
-			//	}
-			//}
+			if neterr, ok := err.(*net.OpError); ok {
+				if neterr.Timeout() {
+					fmt.Println("read超时了")
+					if t.IsFinish() {
+						t.Statistics()
+						break
+					}
+					// Read timeout
+					//delay = expBackoff.Get()
+					continue
+				}
+			}
 			return err
 		}
 		// 结果如8.8.8.8:0
