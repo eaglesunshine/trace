@@ -115,6 +115,11 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 				if neterr.Timeout() {
 					fmt.Println(n)
 					fmt.Println(fmt.Sprintf("buf长度：%d", len(buf)))
+					x, err := icmp.ParseMessage(protocolICMP, buf)
+					if err != nil {
+						return fmt.Errorf("error parsing icmp message: %w", err)
+					}
+					fmt.Println(fmt.Sprintf("x.Type：%v", x.Type))
 					if src != nil {
 						fmt.Println(src.String())
 					}
