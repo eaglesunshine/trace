@@ -108,6 +108,14 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
 			return err
 		}
+		n1, src, err := conn.ReadFrom(buf)
+		if err != nil {
+			fmt.Println(fmt.Sprintf("conn.ReadFrom()出错了，%s", err))
+		}
+		fmt.Println(fmt.Sprintf("conn.ReadFrom()读到长度：%d", n1))
+		if src != nil {
+			fmt.Println(fmt.Sprintf("conn.ReadFrom()的src：%s", src.String()))
+		}
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况啊啊啊啊啊
 		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
