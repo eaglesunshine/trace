@@ -66,7 +66,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return err
 			}
-			if err = t.conn.IPv4PacketConn().SetTTL(64); err != nil {
+			if err = t.conn.IPv4PacketConn().SetTTL(ttl); err != nil {
 				return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 			}
 			_, err = t.conn.WriteTo(msgBytes, addr)
