@@ -32,7 +32,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	if err != nil {
 		return err
 	}
-	err = t.conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
 	if err != nil {
 		return fmt.Errorf("SetControlMessage()，%s", err)
 	}
