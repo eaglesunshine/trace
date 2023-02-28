@@ -103,7 +103,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	//delay := expBackoff.Get()
 	for {
 		// 包+头
-		buf := make([]byte, 1500)
+		buf := make([]byte, packageSize+8)
 		if err := t.conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
 			return err
 		}
