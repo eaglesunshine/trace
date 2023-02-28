@@ -2,6 +2,8 @@ package ztrace
 
 import (
 	"fmt"
+	"golang.org/x/net/icmp"
+	"golang.org/x/net/ipv4"
 	"net"
 	"runtime"
 	"sync"
@@ -28,6 +30,7 @@ type RecvMetric struct {
 }
 
 type TraceRoute struct {
+	conn          *icmp.PacketConn
 	SrcAddr       string
 	Dest          string
 	TCPDPort      uint16
@@ -175,7 +178,15 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		logrus.Error("VerifyCfg failed: ", err)
 		return nil, err
 	}
-
+	conn, err := icmp.ListenPacket("udp4", result.NetSrcAddr.String())
+	if err != nil {
+		return nil, err
+	}
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return nil, fmt.Errorf("SetControlMessage()，%s", err)
+	}
+	result.conn = conn
 	result.Lock = &sync.RWMutex{}
 	result.Metric = make([]*ServerRecord, int(maxTtl)+1)
 	for i := 1; i <= int(maxTtl); i++ {
