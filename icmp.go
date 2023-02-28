@@ -120,7 +120,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 						return fmt.Errorf("error parsing icmp message: %w", err)
 					}
 					fmt.Println(fmt.Sprintf("x.Type：%v", x.Type))
-					h, err := icmp.ParseIPv4Header(buf)
+					h, err := icmp.ParseIPv4Header(buf[14:34])
 					if err != nil {
 						return fmt.Errorf("error parsing ipv4 header: %w", err)
 					}
