@@ -28,7 +28,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
-	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	conn, err := icmp.ListenPacket("udp4", "")
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
 	fmt.Println(t.NetSrcAddr.String())
-	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	conn, err := icmp.ListenPacket("udp4", "")
 	if err != nil {
 		return err
 	}
