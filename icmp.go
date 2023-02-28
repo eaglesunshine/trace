@@ -120,6 +120,11 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 						return fmt.Errorf("error parsing icmp message: %w", err)
 					}
 					fmt.Println(fmt.Sprintf("x.Type：%v", x.Type))
+					h, err := icmp.ParseIPv4Header(buf)
+					if err != nil {
+						return fmt.Errorf("error parsing ipv4 header: %w", err)
+					}
+					fmt.Println(fmt.Sprintf("icmp.ParseIPv4Header()解析头结果，%s，%s", h.Src.String(), h.Dst.String()))
 					if src != nil {
 						fmt.Println(src.String())
 					}
@@ -157,13 +162,13 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 				}
 				switch p := m.Body.(type) {
 				case *icmp.Echo:
-					m := &RecvMetric{
+					recv := &RecvMetric{
 						FlowKey:   key,
 						ID:        uint32(p.ID),
 						RespAddr:  respAddr,
 						TimeStamp: time.Now(),
 					}
-					t.RecordRecv(m)
+					t.RecordRecv(recv)
 					// 取最大的一跳，+1是为了把最后一跳到达目的ip的那一跳算上
 					if p.ID+1 > t.LastHop {
 						t.LastHop = p.ID + 1
