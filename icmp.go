@@ -28,14 +28,14 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
-	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	//if err != nil {
-	//	return err
-	//}
-	//err := t.conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	//if err != nil {
-	//	return fmt.Errorf("SetControlMessage()，%s", err)
-	//}
+	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	if err != nil {
+		return err
+	}
+	err = t.conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return fmt.Errorf("SetControlMessage()，%s", err)
+	}
 
 	ipaddr, err := net.ResolveIPAddr("ip4", t.NetDstAddr.String())
 	if err != nil {
@@ -66,10 +66,10 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return err
 			}
-			if err = t.conn.IPv4PacketConn().SetTTL(ttl); err != nil {
+			if err = conn.IPv4PacketConn().SetTTL(ttl); err != nil {
 				return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 			}
-			_, err = t.conn.WriteTo(msgBytes, addr)
+			_, err = conn.WriteTo(msgBytes, addr)
 			if err != nil {
 				return fmt.Errorf("conn.WriteTo()失败，%s", err)
 			}
@@ -91,25 +91,25 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
 	fmt.Println(t.NetSrcAddr.String())
-	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	//if err != nil {
-	//	return err
-	//}
-	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	//if err != nil {
-	//	return fmt.Errorf("SetControlMessage()，%s", err)
-	//}
+	conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
+	if err != nil {
+		return err
+	}
+	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	if err != nil {
+		return fmt.Errorf("SetControlMessage()，%s", err)
+	}
 	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	//delay := expBackoff.Get()
 	for {
 		// 包+头
 		buf := make([]byte, packageSize+8)
-		if err := t.conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 100)); err != nil {
 			return err
 		}
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况啊啊啊啊啊
-		n, _, src, err := t.conn.IPv4PacketConn().ReadFrom(buf)
+		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
