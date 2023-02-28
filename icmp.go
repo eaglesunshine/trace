@@ -28,8 +28,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
-	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	conn, err := icmp.ListenPacket("udp4", "0.0.0.0")
+	conn, err := icmp.ListenPacket("udp4", "")
 	if err != nil {
 		return err
 	}
@@ -51,9 +50,6 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	for snt := 0; snt < t.Count; snt++ {
 		id := uint16(1)
 		for ttl := 1; ttl <= t.MaxTTL; ttl++ {
-			if snt == t.Count-1 {
-				t.SendTimeMap[ttl] = time.Now()
-			}
 			data := make([]byte, packageSize)
 			data = append(data, bytes.Repeat([]byte{1}, packageSize)...)
 			body := &icmp.Echo{
@@ -70,7 +66,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return err
 			}
-			if err = conn.IPv4PacketConn().SetTTL(ttl); err != nil {
+			if err = conn.IPv4PacketConn().SetTTL(64); err != nil {
 				return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 			}
 			_, err = conn.WriteTo(msgBytes, addr)
@@ -96,15 +92,14 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
 	fmt.Println(t.NetSrcAddr.String())
-	//conn, err := icmp.ListenPacket("udp4", t.NetSrcAddr.String())
-	conn, err := icmp.ListenPacket("udp4", "0.0.0.0")
+	conn, err := icmp.ListenPacket("udp4", "")
 	if err != nil {
 		return err
 	}
-	err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	if err != nil {
-		return fmt.Errorf("SetControlMessage()，%s", err)
-	}
+	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
+	//if err != nil {
+	//	return fmt.Errorf("SetControlMessage()，%s", err)
+	//}
 	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
 	//delay := expBackoff.Get()
 	for {

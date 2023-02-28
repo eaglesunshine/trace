@@ -39,7 +39,6 @@ type TraceRoute struct {
 	WideMode      bool
 	PortOffset    int32
 	LastHop       int
-	SendTimeMap   map[int]time.Time
 
 	NetSrcAddr net.IP
 	NetDstAddr net.IP
@@ -168,7 +167,6 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		PortOffset:    0,
 		Timeout:       time.Duration(timeout) * time.Second,
 		LastHop:       0,
-		SendTimeMap:   make(map[int]time.Time, 0),
 		GlobalTimeout: time.Now().Add(20 * time.Second),
 		HopDetail:     make([]HopInfo, 0),
 	}
