@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv6"
-	"math/rand"
 	"net"
 	"strings"
 	"sync/atomic"
@@ -17,7 +16,7 @@ import (
 const (
 	protocolICMP     = 1
 	protocolIPv6ICMP = 58
-	packageSize      = 64
+	packageSize      = 128
 	interval         = 100
 )
 
@@ -28,7 +27,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	t.DB.Store(key, db)
 	go db.Cache.Run()
 
-	conn, err := icmp.ListenPacket("udp4", "")
+	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "")
 	if err != nil {
 		return err
 	}
@@ -41,10 +40,15 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	if err != nil {
 		return err
 	}
-	addr := &net.UDPAddr{
-		IP:   ipaddr.IP,
-		Zone: ipaddr.Zone,
+	var addr net.Addr = ipaddr
+	// 如果是udp
+	if t.PingType == "udp" {
+		addr = &net.UDPAddr{
+			IP:   ipaddr.IP,
+			Zone: ipaddr.Zone,
+		}
 	}
+
 	t.StartTime = time.Now()
 	mod := uint16(1 << 15)
 	for snt := 0; snt < t.Count; snt++ {
@@ -92,7 +96,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
 	fmt.Println(t.NetSrcAddr.String())
-	conn, err := icmp.ListenPacket("udp4", "")
+	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "")
 	if err != nil {
 		return err
 	}
@@ -100,8 +104,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	if err != nil {
 		return fmt.Errorf("SetControlMessage()，%s", err)
 	}
-	//expBackoff := newExpBackoff(50*time.Microsecond, 11)
-	//delay := expBackoff.Get()
 	for {
 		// 包+头
 		buf := make([]byte, 1500)
@@ -115,16 +117,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
 					fmt.Println(n)
-					x, err := icmp.ParseMessage(protocolICMP, buf)
-					if err != nil {
-						return fmt.Errorf("error parsing icmp message: %w", err)
-					}
-					fmt.Println(fmt.Sprintf("x.Type：%v", x.Type))
-					h, err := icmp.ParseIPv4Header(buf[14:34])
-					if err != nil {
-						return fmt.Errorf("error parsing ipv4 header: %w", err)
-					}
-					fmt.Println(fmt.Sprintf("icmp.ParseIPv4Header()解析头结果，%s，%s", h.Src.String(), h.Dst.String()))
 					if src != nil {
 						fmt.Println(src.String())
 					}
@@ -204,22 +196,4 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		}
 	}
 	return nil
-}
-
-type expBackoff struct {
-	baseDelay time.Duration
-	maxExp    int64
-	c         int64
-}
-
-func newExpBackoff(baseDelay time.Duration, maxExp int64) expBackoff {
-	return expBackoff{baseDelay: baseDelay, maxExp: maxExp}
-}
-
-func (b *expBackoff) Get() time.Duration {
-	if b.c < b.maxExp {
-		b.c++
-	}
-
-	return b.baseDelay * time.Duration(rand.Int63n(1<<b.c))
 }

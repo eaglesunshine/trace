@@ -14,6 +14,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	ipv4Proto = map[string]string{"icmp": "ip4:icmp", "udp": "udp4"}
+	ipv6Proto = map[string]string{"icmp": "ip6:ipv6-icmp", "udp": "udp6"}
+)
+
 type SendMetric struct {
 	FlowKey   string
 	ID        uint32
@@ -29,6 +34,7 @@ type RecvMetric struct {
 }
 
 type TraceRoute struct {
+	PingType      string
 	conn          *icmp.PacketConn
 	SrcAddr       string
 	Dest          string
@@ -146,7 +152,7 @@ func (t *TraceRoute) VerifyCfg() error {
 	return nil
 }
 
-func New(protocol string, dest string, src string, af string, count int, maxTtl int, timeout int64) (result *TraceRoute, err error) {
+func New(protocol string, dest string, src string, af string, count int, timeout int64, pingType string) (result *TraceRoute, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Error(e)
@@ -156,6 +162,7 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		}
 	}()
 	result = &TraceRoute{
+		PingType:      pingType,
 		SrcAddr:       src,
 		Dest:          dest,
 		Af:            af,
@@ -163,7 +170,7 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 		TCPProbePorts: []uint16{80, 8080, 443, 8443},
 		Protocol:      protocol,
 		Count:         count,
-		MaxTTL:        maxTtl,
+		MaxTTL:        64,
 		PacketRate:    1,
 		WideMode:      true,
 		PortOffset:    0,
@@ -187,8 +194,8 @@ func New(protocol string, dest string, src string, af string, count int, maxTtl 
 	//}
 	//result.conn = conn
 	result.Lock = &sync.RWMutex{}
-	result.Metric = make([]*ServerRecord, int(maxTtl)+1)
-	for i := 1; i <= maxTtl; i++ {
+	result.Metric = make([]*ServerRecord, 65)
+	for i := 1; i <= 64; i++ {
 		result.Metric[i] = &ServerRecord{
 			TTL:      uint8(i),
 			Addr:     "???",
