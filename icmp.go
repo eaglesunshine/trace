@@ -113,6 +113,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况，不仅阻塞住了，而且一直读不到东西
 		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		if n > 0 {
+			fmt.Println(n)
+		}
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {

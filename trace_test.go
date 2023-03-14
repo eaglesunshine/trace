@@ -6,7 +6,7 @@ import (
 )
 
 func TestTrace(t *testing.T) {
-	c, err := New("icmp", "www.baidu.com", "", "ip4", 3, 64, 3)
+	c, err := New("icmp", "www.baidu.com", "", "ip4", 3, 3, "icmp")
 	if err != nil {
 		t.Fatal(err)
 		return
@@ -28,6 +28,6 @@ func TestTrace(t *testing.T) {
 		"Timeout":    fmt.Sprintf("%s", c.Timeout),
 		"Hops":       c.Hops,
 	}
-
 	fmt.Println(ret)
+	fmt.Println(c.HopStr)
 }
