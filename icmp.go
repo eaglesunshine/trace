@@ -77,7 +77,6 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return fmt.Errorf("conn.WriteTo()失败，%s", err)
 			}
-			fmt.Println(fmt.Sprintf("发包：%d", snt))
 			m := &SendMetric{
 				FlowKey:   key,
 				ID:        uint32(id),
@@ -113,16 +112,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况，不仅阻塞住了，而且一直读不到东西
 		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		if n > 0 {
-			fmt.Println(n)
-		}
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
-					fmt.Println(n)
-					if src != nil {
-						fmt.Println(src.String())
-					}
 					fmt.Println("read超时了")
 					if t.IsFinish() {
 						t.Statistics()
@@ -168,6 +160,10 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					if p.ID+1 > t.LastHop {
 						t.LastHop = p.ID + 1
 					}
+					//fmt.Println(n)
+					//fmt.Println(cm.TTL)
+					//fmt.Println(cm.Src)
+					//fmt.Println(fmt.Sprintf("p.ID：%d", p.ID))
 				default:
 					return fmt.Errorf("invalid ICMP time exceeded and echo reply; type: '%T', '%v'", pkt, pkt)
 				}
@@ -178,6 +174,10 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		}
 		// 收到echo reply，证明到达目的ip
 		if x.Type == ipv4.ICMPTypeEchoReply || x.Type == ipv6.ICMPTypeEchoReply {
+			// echo reply的时候，返回的包不可能比发的包小
+			if n < packageSize {
+				continue
+			}
 			switch pkt := x.Body.(type) {
 			// 只有到达目的ip，是echo
 			case *icmp.Echo:
@@ -193,6 +193,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 				if pkt.ID < t.LastHop {
 					t.LastHop = pkt.ID
 				}
+				//fmt.Println(cm.TTL)
+				//fmt.Println(cm.Src)
+				//fmt.Println(fmt.Sprintf("pkt.ID：%d", pkt.Seq))
 			default:
 				return fmt.Errorf("invalid ICMP echo reply; type: '%T', '%v'", pkt, pkt)
 			}

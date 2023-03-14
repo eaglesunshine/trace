@@ -6,7 +6,7 @@ import (
 )
 
 func TestTrace(t *testing.T) {
-	c, err := New("icmp", "www.baidu.com", "", "ip4", 3, 3, "icmp")
+	c, err := New("icmp", "8.8.8.8", "", "ip4", 3, 6, "icmp")
 	if err != nil {
 		t.Fatal(err)
 		return
