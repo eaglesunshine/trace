@@ -210,6 +210,9 @@ func (t *TraceRoute) Statistics() {
 		return
 	}
 	hops := make([]HopInfo, 0)
+	if t.LastHop > t.MaxTTL {
+		t.LastHop = t.MaxTTL
+	}
 	for index, item := range t.Metric[0 : t.LastHop+1] {
 		if index == 0 {
 			continue
