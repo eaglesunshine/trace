@@ -252,10 +252,11 @@ func (t *TraceRoute) TraceICMP() (err error) {
 	var handlers []func() error
 
 	handlers = append(handlers, func() error {
-		return t.SendIPv4ICMP()
-	})
-	handlers = append(handlers, func() error {
 		return t.ListenIPv4ICMP()
+	})
+
+	handlers = append(handlers, func() error {
+		return t.SendIPv4ICMP()
 	})
 
 	return GoroutineNotPanic(handlers...)

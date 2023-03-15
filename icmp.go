@@ -69,7 +69,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return fmt.Errorf("SetControlMessage()，%s", err)
 			}
-			if err = conn.IPv4PacketConn().SetTTL(ttl); err != nil {
+			if err = conn.IPv4PacketConn().SetTTL(64); err != nil {
 				return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 			}
 			_, err = conn.WriteTo(msgBytes, addr)
@@ -93,7 +93,6 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 }
 
 func (t *TraceRoute) ListenIPv4ICMP() error {
-	fmt.Println(t.NetSrcAddr.String())
 	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "")
 	if err != nil {
 		return err
@@ -111,7 +110,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况，不仅阻塞住了，而且一直读不到东西
 		//n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		n, src, err := conn.ReadFrom(buf)
 		if src != nil {
 			fmt.Println(src.String())
 		}
