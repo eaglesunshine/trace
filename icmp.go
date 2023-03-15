@@ -35,7 +35,6 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 	if err != nil {
 		return fmt.Errorf("SetControlMessage()，%s", err)
 	}
-
 	ipaddr, err := net.ResolveIPAddr("ip4", t.NetDstAddr.String())
 	if err != nil {
 		return err
