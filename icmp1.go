@@ -71,12 +71,7 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 1500)); err != nil {
 			return err
 		}
-		n, cm, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		if cm != nil {
-			fmt.Println(fmt.Sprintf("cm.TTL：%d", cm.TTL))
-			fmt.Println(fmt.Sprintf("cm.Src：%s", cm.Src.String()))
-			fmt.Println(fmt.Sprintf("cm.Dsr：%s", cm.Dst))
-		}
+		n, src, err := conn.ReadFrom(buf)
 		if n > 0 {
 			fmt.Println(n)
 			fmt.Println(src.String())
