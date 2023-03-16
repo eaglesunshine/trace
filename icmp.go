@@ -69,7 +69,7 @@ func (t *TraceRoute) SendIPv4ICMP() error {
 			if err != nil {
 				return fmt.Errorf("SetControlMessage()，%s", err)
 			}
-			if err = conn.IPv4PacketConn().SetTTL(64); err != nil {
+			if err = conn.IPv4PacketConn().SetTTL(ttl); err != nil {
 				return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 			}
 			_, err = conn.WriteTo(msgBytes, addr)
@@ -118,6 +118,7 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 		}
 		if n > 0 {
 			fmt.Println(n)
+			fmt.Println(src.String())
 		}
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
