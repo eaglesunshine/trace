@@ -42,7 +42,7 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 		Data: data,
 	}
 	msg := &icmp.Message{
-		Type: ipv4.ICMPTypeEcho,
+		Type: ipv4.ICMPTypeDestinationUnreachable,
 		Code: 0,
 		Body: body,
 	}
@@ -54,6 +54,7 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 	//if err != nil {
 	//	return fmt.Errorf("SetControlMessage()，%s", err)
 	//}
+	fmt.Println(fmt.Sprintf("TTL：%d", t.Count))
 	if err = conn.IPv4PacketConn().SetTTL(t.Count); err != nil {
 		return fmt.Errorf("conn.IPv4PacketConn().SetTTL()失败，%s", err)
 	}
