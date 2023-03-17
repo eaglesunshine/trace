@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
 	"net"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -72,7 +73,8 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 1500)); err != nil {
 			return err
 		}
-		n, src, err := conn.ReadFrom(buf)
+		fmt.Println(runtime.GOOS)
+		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if n > 0 {
 			fmt.Println(n)
 			fmt.Println(src.String())
