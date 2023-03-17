@@ -8,6 +8,7 @@ package ztrace
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -23,6 +24,11 @@ import (
 //}
 
 func (t *TraceRoute) SendIPv4ICMP1() error {
+	ip, err := getClientIp()
+	if err != nil {
+		return err
+	}
+	fmt.Println(ip)
 	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "192.168.0.1")
 	if err != nil {
 		return err
@@ -156,4 +162,25 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 		}
 	}
 	return nil
+}
+
+func getClientIp() (string, error) {
+	addrs, err := net.InterfaceAddrs()
+
+	if err != nil {
+		return "", err
+	}
+
+	for _, address := range addrs {
+		// 检查ip地址判断是否回环地址
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String(), nil
+			}
+
+		}
+	}
+
+	return "", errors.New("Can not find the client ip address!")
+
 }
