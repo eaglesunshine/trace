@@ -23,7 +23,7 @@ import (
 //}
 
 func (t *TraceRoute) SendIPv4ICMP1() error {
-	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "0.0.0.0:80")
+	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "0.0.0.0")
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 			return err
 		}
 		fmt.Println(runtime.GOOS)
-		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
+		n, src, err := conn.ReadFrom(buf)
 		if n > 0 {
 			fmt.Println(n)
 			fmt.Println(src.String())
