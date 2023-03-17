@@ -29,7 +29,8 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 		return err
 	}
 	fmt.Println(ip)
-	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "192.168.0.1")
+	fmt.Println(t.NetSrcAddr.String())
+	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], ip)
 	if err != nil {
 		return err
 	}
