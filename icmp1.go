@@ -23,7 +23,7 @@ import (
 //}
 
 func (t *TraceRoute) SendIPv4ICMP1() error {
-	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "0.0.0.0")
+	conn, err := icmp.ListenPacket(ipv4Proto[t.PingType], "127.0.0.1")
 	if err != nil {
 		return err
 	}
