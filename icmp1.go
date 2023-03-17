@@ -70,9 +70,9 @@ func (t *TraceRoute) SendIPv4ICMP1() error {
 		}
 		// 包+头
 		buf := make([]byte, 1500)
-		//if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 1500)); err != nil {
-		//	return err
-		//}
+		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 1500)); err != nil {
+			return err
+		}
 		fmt.Println(runtime.GOOS)
 		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
 		if n > 0 {
