@@ -276,6 +276,8 @@ func (t *TraceRoute) Run() error {
 		return t.TraceICMP()
 	case "icmp1":
 		return t.SendIPv4ICMP1()
+	case "icmp2":
+		return t.SendIPv4ICMP2()
 
 	default:
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")
