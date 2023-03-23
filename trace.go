@@ -274,11 +274,8 @@ func (t *TraceRoute) Run() error {
 		return t.TraceUDP()
 	case "icmp":
 		return t.TraceICMP()
-	case "icmp1":
-		return t.SendIPv4ICMP1()
-	case "icmp2":
-		return t.SendIPv4ICMP2()
-
+	case "android":
+		return t.ExecCmd()
 	default:
 		return fmt.Errorf("unsupported protocol: only support tcp/udp/icmp")
 	}
