@@ -6,18 +6,16 @@
 
 package ztrace
 
-import (
-	"fmt"
-	"os/exec"
-)
+import "fmt"
 
 func (t *TraceRoute) ExecCmd() error {
-	cmd := exec.Command("ping", "-t 1", "-c 1", "www.qq.com")
-	out, err := cmd.CombinedOutput()
+	cmd := NewExecute()
+	stdOut, stdErr, err := cmd.Run("ping", "-c 1", "-t 1", "www.qq.com")
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
-	fmt.Println(string(out))
+	fmt.Println(stdOut)
+	fmt.Println(stdErr)
 	return nil
 }
