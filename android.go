@@ -14,11 +14,22 @@ import (
 
 func (t *TraceRoute) ExecCmd() error {
 	cmd := NewExecute()
-	stdOut, _, err := cmd.Run("ping", "-i 0.2", "-c 1", "-t 1", "-W 200", "www.qq.com")
-	if _, ok := err.(*exec.ExitError); ok {
+	for i := 1; i <= 64; i++ {
+		ttl := fmt.Sprintf("-t %d", i)
+		stdOut, _, err := cmd.Run("ping", "-i 0.2", "-c 1", ttl, "-W 200", "www.qq.com")
+		if _, ok := err.(*exec.ExitError); ok {
 
+		}
+		hopIp := parseHopIp(stdOut)
+		fmt.Println(hopIp)
 	}
-	arr := strings.Split(stdOut, "\n")
-	fmt.Println(arr[1])
 	return nil
+}
+
+func parseHopIp(text string) string {
+	arr := strings.Split(text, "\n")
+	str := arr[1]
+	strArr := strings.Fields(str)
+	hopIp := strArr[1]
+	return hopIp
 }
