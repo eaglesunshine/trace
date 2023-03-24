@@ -7,23 +7,17 @@
 package ztrace
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 )
 
 func (t *TraceRoute) ExecCmd() error {
 	cmd := exec.Command("ping", "-t 1", "-c 1", "www.qq.com")
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
-	outStr, errStr := stdout.String(), stderr.String()
-	fmt.Println(outStr)
-	fmt.Println(11111)
-	fmt.Println(errStr)
+	fmt.Println(string(out))
 	return nil
 }
