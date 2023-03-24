@@ -13,30 +13,17 @@ import (
 )
 
 func (t *TraceRoute) ExecCmd() error {
-	cmd1 := exec.Command("ping", "-t 1", "www.qq.com")
-	outinfo1 := bytes.Buffer{}
-	cmd1.Stdout = &outinfo1
-	err := cmd1.Start()
+	cmd := exec.Command("ping", "-t 1", "-c 1", "www.qq.com")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		fmt.Println(err.Error())
+		return err
 	}
-	if err = cmd1.Wait(); err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println(outinfo1.String())
-	}
-
-	cmd2 := exec.Command("ping", "-t 2", "www.qq.com")
-	outinfo2 := bytes.Buffer{}
-	cmd2.Stdout = &outinfo2
-	err = cmd2.Start()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	if err = cmd2.Wait(); err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Println(outinfo2.String())
-	}
+	outStr, errStr := stdout.String(), stderr.String()
+	fmt.Println(outStr)
+	fmt.Println(11111)
+	fmt.Println(errStr)
 	return nil
 }
