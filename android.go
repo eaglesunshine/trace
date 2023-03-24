@@ -18,7 +18,7 @@ func (t *TraceRoute) ExecCmd() error {
 	if _, ok := err.(*exec.ExitError); ok {
 
 	}
-	strings.Split(stdOut, "\n")
-	fmt.Println(stdOut[1])
+	arr := strings.Split(stdOut, "\n")
+	fmt.Println(arr[1])
 	return nil
 }
