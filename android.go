@@ -46,13 +46,14 @@ func (t *TraceRoute) ExecCmd() error {
 			hopIp := t.parseHopIp(stdOut, t.Count, i)
 			fmt.Println(fmt.Sprintf("%d --- %s", i, hopIp))
 			if hopIp == t.NetDstAddr.String() {
-				t.Statistics()
-				fmt.Println(t.HopStr)
+				lastHop = i
+				t.LastHop = i
 				break
 			}
 		}
 	}
-
+	t.Statistics()
+	fmt.Println(t.HopStr)
 	return nil
 }
 
@@ -60,7 +61,7 @@ func (t *TraceRoute) parseHopIp(text string, count, ttl int) string {
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	var hopIp string
 	arr := strings.Split(text, "\n")
-	if len(arr) < count+1 {
+	if len(arr) == 1 {
 		return "*"
 	}
 	// 从第二行到第count行
@@ -68,7 +69,7 @@ func (t *TraceRoute) parseHopIp(text string, count, ttl int) string {
 		row := arr[i]
 		word := strings.Fields(row)
 		if strings.Contains(row, "ttl") {
-			hopIp = word[3]
+			hopIp = strings.ReplaceAll(word[3], ":", "")
 		} else {
 			hopIp = word[1]
 		}
