@@ -39,7 +39,7 @@ func (t *TraceRoute) ExecCmd() error {
 				TimeStamp: time.Now(),
 			}
 			t.RecordSend(m)
-			stdOut, _, err := cmd.RunWithTimeout(time.Millisecond*200, "ping", "-i 0.2", "-c 1", ttl, "-W 200", "8.8.8.8")
+			stdOut, _, err := cmd.RunWithTimeout(time.Millisecond*200, "ping", "-i 0.2", "-c 1", ttl, "-W 200", t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
 
 			}
