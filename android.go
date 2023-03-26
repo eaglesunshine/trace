@@ -31,10 +31,12 @@ func (t *TraceRoute) ExecCmd() error {
 				TimeStamp: time.Now(),
 			}
 			t.RecordSend(m)
-			stdOut, _, err := cmd.RunWithTimeout(time.Millisecond*200, "ping", "-i 0.2", "-c 1", ttl, "-W 200", t.Dest)
+			stdOut, _, err := cmd.RunWithTimeout(time.Millisecond*200, "/system/bin/ping",
+				"-i 0.2", "-c 1", ttl, "-W 200", t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
-
+				fmt.Println(err.Error())
 			}
+			fmt.Println(stdOut)
 			hopIp := t.parseHopIp(stdOut, t.Count, i)
 			fmt.Println(fmt.Sprintf("%d --- %s", i, hopIp))
 			if hopIp == t.NetDstAddr.String() {
