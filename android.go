@@ -20,26 +20,29 @@ func (t *TraceRoute) ExecCmd() error {
 	go db.Cache.Run()
 
 	lastHop := 64
-	for i := 1; i <= lastHop; i++ {
-		ttl := fmt.Sprintf("-t %d", i)
-		cmd := NewExecute()
-		m := &SendMetric{
-			FlowKey:   key,
-			ID:        uint32(i),
-			TTL:       uint8(i),
-			TimeStamp: time.Now(),
-		}
-		t.RecordSend(m)
-		timeout := time.Millisecond * 200
-		stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", ttl, "-W 200", t.Dest)
-		if _, ok := err.(*exec.ExitError); ok {
-			fmt.Println(err.Error())
-		}
-		hopIp := t.parseHopIp(stdOut, i)
-		if hopIp == t.NetDstAddr.String() {
-			// 设置最后一跳
-			t.LastHop = i
-			break
+	for c := 1; c <= t.Count; c++ {
+		for i := 1; i <= lastHop; i++ {
+			ttl := fmt.Sprintf("-t %d", i)
+			cmd := NewExecute()
+			m := &SendMetric{
+				FlowKey:   key,
+				ID:        uint32(i),
+				TTL:       uint8(i),
+				TimeStamp: time.Now(),
+			}
+			t.RecordSend(m)
+			timeout := time.Millisecond * 200
+			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", ttl, "-W 200", t.Dest)
+			if _, ok := err.(*exec.ExitError); ok {
+				fmt.Println(err.Error())
+			}
+			hopIp := t.parseHopIp(stdOut, i)
+			if hopIp == t.NetDstAddr.String() {
+				// 减少循环次数
+				lastHop = i
+				// 设置最后一跳
+				t.LastHop = i
+			}
 		}
 	}
 	t.Statistics()
