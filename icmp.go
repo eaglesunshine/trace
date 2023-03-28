@@ -165,9 +165,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					}
 					t.RecordRecv(recv)
 					// 取最大的一跳，+1是为了把最后一跳到达目的ip的那一跳算上
-					if p.ID+1 > t.LastHop {
-						t.LastHop = p.ID + 1
-					}
+					//if p.ID+1 > t.LastHop {
+					//	t.LastHop = p.ID + 1
+					//}
 					//fmt.Println(n)
 					//fmt.Println(cm.TTL)
 					//fmt.Println(cm.Src)
@@ -198,9 +198,9 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 				}
 				t.RecordRecv(m)
 				// 因为当ttl到一定值时，后面都是能到达目的ip，所以要筛选出最小的跳数，即最后一跳
-				if pkt.ID < t.LastHop {
-					t.LastHop = pkt.ID
-				}
+				//if pkt.ID < t.LastHop {
+				//	t.LastHop = pkt.ID
+				//}
 				//fmt.Println(cm.TTL)
 				//fmt.Println(cm.Src)
 				//fmt.Println(fmt.Sprintf("pkt.ID：%d", pkt.Seq))

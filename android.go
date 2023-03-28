@@ -41,7 +41,7 @@ func (t *TraceRoute) ExecCmd() error {
 				// 减少循环次数
 				lastHop = i
 				// 设置最后一跳
-				t.LastHop = i
+				//t.LastHop = i
 			}
 		}
 	}
