@@ -104,22 +104,12 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 	for {
 		// 包+头
 		buf := make([]byte, 1500)
-		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 1500)); err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(time.Millisecond * 200)); err != nil {
 			return err
 		}
 		// tmd，在苹果手机(底层是ios)上这个ReadFrom会阻塞读，在ios模拟器(底层是dawrin)上就没事
 		// md，怎么在android又是另一个情况，不仅阻塞住了，而且一直读不到东西
 		n, _, src, err := conn.IPv4PacketConn().ReadFrom(buf)
-		//n, src, err := conn.ReadFrom(buf)
-		//if cm != nil {
-		//	fmt.Println(fmt.Sprintf("cm.TTL：%d", cm.TTL))
-		//	fmt.Println(fmt.Sprintf("cm.Src：%s", cm.Src.String()))
-		//	fmt.Println(fmt.Sprintf("cm.Dsr：%s", cm.Dst))
-		//}
-		//if n > 0 {
-		//	fmt.Println(n)
-		//	fmt.Println(src.String())
-		//}
 		if err != nil {
 			if neterr, ok := err.(*net.OpError); ok {
 				if neterr.Timeout() {
@@ -168,10 +158,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 					//if p.ID+1 > t.LastHop {
 					//	t.LastHop = p.ID + 1
 					//}
-					//fmt.Println(n)
-					//fmt.Println(cm.TTL)
-					//fmt.Println(cm.Src)
-					//fmt.Println(fmt.Sprintf("p.ID：%d", p.ID))
 				default:
 					return fmt.Errorf("invalid ICMP time exceeded and echo reply; type: '%T', '%v'", pkt, pkt)
 				}
@@ -201,9 +187,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 				//if pkt.ID < t.LastHop {
 				//	t.LastHop = pkt.ID
 				//}
-				//fmt.Println(cm.TTL)
-				//fmt.Println(cm.Src)
-				//fmt.Println(fmt.Sprintf("pkt.ID：%d", pkt.Seq))
 			default:
 				return fmt.Errorf("invalid ICMP echo reply; type: '%T', '%v'", pkt, pkt)
 			}
