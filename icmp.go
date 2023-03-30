@@ -164,7 +164,6 @@ func (t *TraceRoute) ListenIPv4ICMP() error {
 			default:
 				return fmt.Errorf("invalid ICMP time exceeded; type: '%T', '%v'", pkt, pkt)
 			}
-
 		}
 		// 收到echo reply，证明到达目的ip
 		if x.Type == ipv4.ICMPTypeEchoReply || x.Type == ipv6.ICMPTypeEchoReply {

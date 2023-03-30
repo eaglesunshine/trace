@@ -262,6 +262,20 @@ func (t *TraceRoute) TraceICMP() (err error) {
 	return GoroutineNotPanic(handlers...)
 }
 
+func (t *TraceRoute) TraceWindowsICMP() (err error) {
+	var handlers []func() error
+
+	handlers = append(handlers, func() error {
+		return t.ListenWindowsIPv4ICMP()
+	})
+
+	handlers = append(handlers, func() error {
+		return t.SendWindowsIPv4ICMP()
+	})
+
+	return GoroutineNotPanic(handlers...)
+}
+
 func (t *TraceRoute) Run() error {
 	if t.Af == "ip6" {
 		return t.TraceIpv6ICMP()
@@ -273,6 +287,12 @@ func (t *TraceRoute) Run() error {
 	case "udp":
 		return t.TraceUDP()
 	case "icmp":
+		if runtime.GOOS == "android" {
+			return t.ExecCmd()
+		}
+		if runtime.GOOS == "windows" {
+			return t.TraceWindowsICMP()
+		}
 		return t.TraceICMP()
 	case "android":
 		return t.ExecCmd()
