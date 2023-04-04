@@ -118,7 +118,7 @@ type HopInfo struct {
 
 func (t *TraceRoute) Statistics() {
 	var buffer bytes.Buffer
-	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", time.Now().Format("2006-01-02 15:04:05"), t.Dest))
+	buffer.WriteString(fmt.Sprintf("Start: %v, DestAddr: %v\n", t.StartTime.Format("2006-01-02 15:04:05"), t.Dest))
 	buffer.WriteString(fmt.Sprintf("%-3v %-40v  %10v%c  %10v  %10v  %10v  %10v  %10v\n", "", "HOST", "Loss", '%', "Snt", "Last", "Avg", "Best", "Wrst"))
 
 	hops := make([]HopInfo, 0)
