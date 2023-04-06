@@ -35,7 +35,6 @@ func (t *TraceRoute) ExecCmd() error {
 			timeout := time.Millisecond * 200
 			stdOut, _, err := cmd.RunWithTimeout(timeout, "ping", "-c 1", ttl, "-W 200", t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
-				fmt.Println(err.Error())
 			}
 			hopIp := t.parseHopIp(stdOut, i)
 			if hopIp == t.NetDstAddr.String() {
