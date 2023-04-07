@@ -20,10 +20,13 @@ func (t *TraceRoute) ExecCmd() error {
 	go db.Cache.Run()
 
 	t.StartTime = time.Now()
+	// 计算秒
+	sec := float64(t.Interval) / float64(time.Second)
 	lastHop := 64
 	for c := 1; c <= t.Count; c++ {
 		for i := 1; i <= lastHop; i++ {
 			ttl := fmt.Sprintf("-t %d", i)
+			inter := fmt.Sprintf("-i %f", sec)
 			cmd := NewExecute()
 			m := &SendMetric{
 				FlowKey:   key,
@@ -33,7 +36,7 @@ func (t *TraceRoute) ExecCmd() error {
 			}
 			t.RecordSend(m)
 			timeout := time.Millisecond * 200
-			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", ttl, "-W 200", t.Dest)
+			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", inter, ttl, "-W 200", t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
 			}
 			hopIp := t.parseHopIp(stdOut, i)

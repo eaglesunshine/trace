@@ -2,7 +2,6 @@ package ztrace
 
 import (
 	"fmt"
-	"golang.org/x/net/icmp"
 	"net"
 	"runtime"
 	"sync"
@@ -35,12 +34,12 @@ type RecvMetric struct {
 
 type TraceRoute struct {
 	PingType      string
-	conn          *icmp.PacketConn
 	SrcAddr       string
 	Dest          string
 	TCPDPort      uint16
 	TCPProbePorts []uint16
 	Count         int
+	Interval      time.Duration
 	MaxTTL        int
 	Protocol      string
 	PacketRate    float32
@@ -152,7 +151,8 @@ func (t *TraceRoute) VerifyCfg() error {
 	return nil
 }
 
-func New(protocol string, dest string, src string, af string, count int, timeout int64, pingType string) (result *TraceRoute, err error) {
+func New(protocol string, dest string, src string, af string, count int, interval time.Duration, timeout int64,
+	pingType string) (result *TraceRoute, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Error(e)
@@ -170,6 +170,7 @@ func New(protocol string, dest string, src string, af string, count int, timeout
 		TCPProbePorts: []uint16{80, 8080, 443, 8443},
 		Protocol:      protocol,
 		Count:         count,
+		Interval:      interval,
 		MaxTTL:        64,
 		PacketRate:    1,
 		WideMode:      true,
@@ -184,15 +185,6 @@ func New(protocol string, dest string, src string, af string, count int, timeout
 		logrus.Error("VerifyCfg failed: ", err)
 		return nil, err
 	}
-	//conn, err := icmp.ListenPacket("udp4", result.NetSrcAddr.String())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//err = conn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
-	//if err != nil {
-	//	return nil, fmt.Errorf("SetControlMessage()，%s", err)
-	//}
-	//result.conn = conn
 	result.Lock = &sync.RWMutex{}
 	result.Metric = make([]*ServerRecord, 65)
 	for i := 1; i <= 64; i++ {
