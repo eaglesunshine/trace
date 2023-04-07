@@ -63,7 +63,7 @@ func (t *TraceRoute) parseHopIp(text string, ttl int) string {
 		// 8.8.8.8:
 		hopIp = strings.ReplaceAll(word[3], ":", "")
 	} else {
-		hopIp = word[1]
+		hopIp = strings.ReplaceAll(word[1], ":", "")
 	}
 	fmt.Println(hopIp)
 	recv := &RecvMetric{
