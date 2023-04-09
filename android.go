@@ -61,14 +61,12 @@ func (t *TraceRoute) parseHopIp(text string, ttl int) string {
 	}
 	row := arr[1]
 	word := strings.Fields(row)
-	fmt.Println(word)
 	if strings.Contains(row, "ttl") {
 		// 8.8.8.8:
 		hopIp = strings.ReplaceAll(word[3], ":", "")
 	} else {
 		hopIp = strings.ReplaceAll(word[1], ":", "")
 	}
-	fmt.Println(hopIp)
 	recv := &RecvMetric{
 		FlowKey:   key,
 		ID:        uint32(ttl),
