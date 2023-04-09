@@ -36,7 +36,7 @@ func (t *TraceRoute) ExecCmd() error {
 			}
 			t.RecordSend(m)
 			timeout := time.Millisecond * 200
-			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", inter, ttl, "-w 200", t.Dest)
+			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", inter, ttl, t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
 			}
 			fmt.Println(stdOut)
