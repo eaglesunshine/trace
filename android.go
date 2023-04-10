@@ -36,10 +36,12 @@ func (t *TraceRoute) ExecCmd() error {
 			}
 			t.RecordSend(m)
 			timeout := time.Millisecond * 200
-			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", inter, ttl, t.Dest)
+			stdOut, _, err := cmd.RunWithTimeout(timeout, "ping", "-c 1", inter, ttl, t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
 			}
+			fmt.Println(111111)
 			fmt.Println(stdOut)
+			fmt.Println(222222)
 			hopIp := t.parseHopIp(stdOut, i)
 			if hopIp == t.NetDstAddr.String() {
 				// 减少循环次数
@@ -57,9 +59,18 @@ func (t *TraceRoute) parseHopIp(text string, ttl int) string {
 	key := GetHash(t.NetSrcAddr.To4(), t.NetDstAddr.To4(), 65535, 65535, 1)
 	var hopIp string
 	arr := strings.Split(text, "\n")
-	if len(arr) == 1 {
+	if len(arr) < 2 {
 		return "*"
 	}
+	/*
+		PING 8.8.8.8 (8.8.8.8): 56 data bytes
+		64 bytes from 8.8.8.8: icmp_seq=0 ttl=107 time=24.922 ms
+
+		--- 8.8.8.8 ping statistics ---
+		1 packets transmitted, 1 packets received, 0.0% packet loss
+		round-trip min/avg/max/stddev = 24.922/24.922/24.922/0.000 ms
+	*/
+	// 为了取第2行
 	row := arr[1]
 	word := strings.Fields(row)
 	if strings.Contains(row, "ttl") {
