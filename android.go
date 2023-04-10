@@ -20,13 +20,10 @@ func (t *TraceRoute) ExecCmd() error {
 	go db.Cache.Run()
 
 	t.StartTime = time.Now()
-	// 计算秒
-	sec := float64(t.Interval) / float64(time.Second)
 	lastHop := 64
 	for c := 1; c <= t.Count; c++ {
 		for i := 1; i <= lastHop; i++ {
 			ttl := fmt.Sprintf("-t %d", i)
-			inter := fmt.Sprintf("-i %f", sec)
 			cmd := NewExecute()
 			m := &SendMetric{
 				FlowKey:   key,
@@ -36,12 +33,9 @@ func (t *TraceRoute) ExecCmd() error {
 			}
 			t.RecordSend(m)
 			timeout := time.Millisecond * 200
-			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", inter, ttl, "-W 200", t.Dest)
+			stdOut, _, err := cmd.RunWithTimeout(timeout, "/system/bin/ping", "-c 1", ttl, "-W 200", t.Dest)
 			if _, ok := err.(*exec.ExitError); ok {
 			}
-			fmt.Println(111111)
-			fmt.Println(stdOut)
-			fmt.Println(222222)
 			hopIp := t.parseHopIp(stdOut, i)
 			if hopIp == t.NetDstAddr.String() {
 				// 减少循环次数
@@ -50,6 +44,7 @@ func (t *TraceRoute) ExecCmd() error {
 				//t.LastHop = i
 			}
 		}
+		time.Sleep(t.Interval)
 	}
 	t.Statistics()
 	return nil
@@ -72,6 +67,9 @@ func (t *TraceRoute) parseHopIp(text string, ttl int) string {
 	*/
 	// 为了取第2行
 	row := arr[1]
+	if len(row) == 0 {
+		return "*"
+	}
 	word := strings.Fields(row)
 	if strings.Contains(row, "ttl") {
 		// 8.8.8.8:
