@@ -171,7 +171,7 @@ func New(protocol string, dest string, src string, af string, count int, interva
 		Protocol:      protocol,
 		Count:         count,
 		Interval:      interval,
-		MaxTTL:        64,
+		MaxTTL:        30,
 		PacketRate:    1,
 		WideMode:      true,
 		PortOffset:    0,

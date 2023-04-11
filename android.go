@@ -20,7 +20,7 @@ func (t *TraceRoute) ExecCmd() error {
 	go db.Cache.Run()
 
 	t.StartTime = time.Now()
-	lastHop := 64
+	lastHop := 30
 	for c := 1; c <= t.Count; c++ {
 		for i := 1; i <= lastHop; i++ {
 			ttl := fmt.Sprintf("-t %d", i)
@@ -40,6 +40,7 @@ func (t *TraceRoute) ExecCmd() error {
 			if hopIp == t.NetDstAddr.String() {
 				// 减少循环次数
 				lastHop = i
+				break
 				// 设置最后一跳
 				//t.LastHop = i
 			}
