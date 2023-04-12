@@ -152,7 +152,7 @@ func (t *TraceRoute) Statistics() {
 			hops = append(hops, HopInfo{
 				Index: index,
 				Host:  item.Addr,
-				Loss:  item.Loss,
+				Loss:  FloatTrunc(item.Loss, 1),
 				Snt:   t.Count,
 				Last:  Time2Float(item.LastTime),
 				Avg:   Time2Float(item.AvgTime),
@@ -178,6 +178,13 @@ func (t *TraceRoute) Statistics() {
 	t.HopDetail = hops
 }
 
+// Time2Float 时间转float，保留1位小数
 func Time2Float(t time.Duration) float64 {
-	return (float64)(t/time.Microsecond) / float64(1000)
+	f := (float64)(t/time.Microsecond) / float64(1000)
+	return FloatTrunc(f, 1)
+}
+
+// FloatTrunc 获取一个浮点数，保留小数点后N位
+func FloatTrunc(val float64, precision int) float64 {
+	return math.Trunc(val*math.Pow10(precision)) / math.Pow10(precision)
 }
