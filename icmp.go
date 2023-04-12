@@ -17,7 +17,6 @@ const (
 	protocolICMP     = 1
 	protocolIPv6ICMP = 58
 	packageSize      = 64
-	interval         = 100
 )
 
 func (t *TraceRoute) SendIPv4ICMP() error {

@@ -46,6 +46,9 @@ func (t *TraceRoute) ExecCmd() error {
 			}
 		}
 		time.Sleep(t.Interval)
+		if t.IsFinish() {
+			break
+		}
 	}
 	t.Statistics()
 	return nil
