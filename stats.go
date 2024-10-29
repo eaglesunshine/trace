@@ -77,7 +77,7 @@ func (t *TraceRoute) RecordRecv(v *RecvMetric) bool {
 func (t *TraceRoute) IsFinish() bool {
 	// 全局超时
 	if time.Now().After(t.GlobalTimeout) {
-		fmt.Println("IsFinish, 超时了")
+		//fmt.Println("IsFinish, 超时了")
 		t.LastHop = -999
 		return true
 	}
