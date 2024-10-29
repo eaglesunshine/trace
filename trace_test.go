@@ -1,7 +1,6 @@
 package ztrace
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -17,18 +16,18 @@ func TestTrace(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-
-	ret := map[string]interface{}{
-		"SrcAddr":    c.SrcAddr,
-		"NetSrcAddr": c.NetSrcAddr.String(),
-		"Dest":       c.Dest,
-		"NetDstAddr": c.NetDstAddr.String(),
-		"Protocol":   c.Protocol,
-		"MaxPath":    c.Count,
-		"MaxTTL":     c.MaxTTL,
-		"Timeout":    fmt.Sprintf("%s", c.Timeout),
-		"Hops":       c.Hops,
-	}
-	fmt.Println(ret)
-	fmt.Println(c.HopStr)
+	//
+	//ret := map[string]interface{}{
+	//	"SrcAddr":    c.SrcAddr,
+	//	"NetSrcAddr": c.NetSrcAddr.String(),
+	//	"Dest":       c.Dest,
+	//	"NetDstAddr": c.NetDstAddr.String(),
+	//	"Protocol":   c.Protocol,
+	//	"MaxPath":    c.Count,
+	//	"MaxTTL":     c.MaxTTL,
+	//	"Timeout":    fmt.Sprintf("%s", c.Timeout),
+	//	"Hops":       c.Hops,
+	//}
+	//fmt.Println(ret)
+	//fmt.Println(c.HopStr)
 }
